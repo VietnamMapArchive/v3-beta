@@ -101,6 +101,13 @@
     .section-sep span { display:none; }
     .tab-btn.active { background:#111827; color:#fff; border-color:#111827; }
 
+    /* Sticky actions for More tab */
+    #panelMore .sticky-actions { position: sticky; top: 0; z-index: 5; display:flex; gap:10px; align-items:center; justify-content:center; flex-wrap:wrap; padding:8px 0; background: rgba(255,255,255,0.95); border-bottom:1px solid #e5e7eb; backdrop-filter: blur(2px); }
+    /* Pretty pill buttons */
+    .btn-chip { appearance:none; display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:9999px; border:1px solid #d1d5db; background: linear-gradient(#ffffff, #f8fafc); color:#111827; text-decoration:none; font-size:13px; font-weight:600; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+    .btn-chip:hover { background:#f3f4f6; border-color:#cbd5e1; }
+    .btn-chip:active { transform: translateY(1px); }
+
     /* colored action buttons */
     .btn-blue  { background:#2563eb; color:#fff; }
     .btn-blue:hover  { background:#1d4ed8; }
@@ -284,11 +291,11 @@
       </div>
     </div>
     <div id="panelMore" class="tab-panel">
-      <div class="inline" style="gap:10px; align-items:center; flex-wrap:wrap;">
+      <div class="sticky-actions">
         <!-- TODO: replace example.com URLs with your real destinations -->
-        <a class="tool-btn" href="https://example.com/about" target="_blank" rel="noreferrer">About Us</a>
-        <a class="tool-btn" href="https://example.com/blog" target="_blank" rel="noreferrer">Blog</a>
-        <a class="tool-btn" href="https://example.com/contact" target="_blank" rel="noreferrer">Get in touch</a>
+        <a class="btn-chip" href="https://example.com/about" target="_blank" rel="noreferrer">About Us</a>
+        <a class="btn-chip" href="https://example.com/blog" target="_blank" rel="noreferrer">Blog</a>
+        <a class="btn-chip" href="https://example.com/contact" target="_blank" rel="noreferrer">Get in touch</a>
       </div>
       <div class="small" style="margin-top:10px;">
         <div style="font-weight:600; margin-bottom:6px;">Tips & Shortcuts</div>
