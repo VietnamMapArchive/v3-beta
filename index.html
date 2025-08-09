@@ -17,7 +17,8 @@
     .ol-zoom button, .ol-rotate button { width: var(--ctlSz); height: var(--ctlSz); font-size: 16px; border-radius: 8px; }
     .ol-rotate button .ol-compass { font-size: 12px; }
     html, body { height: 100%; margin: 0; }
-    :root { --tabH: calc(100vh / 3); }
+    :root { --vh: 100vh; --tabH: calc(var(--vh) / 3); }
+    @supports (height: 100dvh) { :root { --vh: 100dvh; } }
     :root { --ctlSz: 34px; --ctlGap: 4px; }
     #map { position: relative; width: 100%; height: 100%; }
     .panel {
@@ -52,8 +53,15 @@
       box-shadow: 0 6px 18px rgba(0,0,0,0.15);
       /* stack: tabs (fixed) + active panel (scroll) + credits (fixed) */
       display: flex; flex-direction: column; gap: 10px; align-items: stretch;
-      height: var(--barH, var(--tabH)); max-height: 90vh; overflow: hidden;
+      height: var(--barH, var(--tabH)); max-height: 90vh; min-height: var(--barMin, 150px); overflow: hidden; box-sizing: border-box;
     }
+    /* collapse/expand bottom bar except credit */
+    .bottombar.collapsed { height: auto; min-height: 0; padding-top: 4px; padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px)); }
+    .bottombar.collapsed .bar-resizer,
+    .bottombar.collapsed .tabs,
+    .bottombar.collapsed .section-sep,
+    .bottombar.collapsed .tab-panel { display: none !important; }
+    .creditbar { display:flex; align-items:center; gap:8px; }
     /* drag handle to resize bottom bar */
     .bar-resizer { flex: 0 0 auto; height: 16px; cursor: ns-resize; display: flex; align-items: center; justify-content: center; touch-action: none; }
     .bar-resizer .grip { width: 56px; height: 5px; border-radius: 999px; background: #d1d5db; }
@@ -127,6 +135,7 @@
       .control-grid .right { justify-self: start; }
     }
     @media (max-width: 760px) {
+      :root { --tabH: calc(var(--vh) / 3.8); }
       /* Mobile: two columns => Label | Selector */
       .control-grid { grid-template-columns: max-content 1fr; }
       /* Keep controls compact; make overlay input the same visual width as basemap */
@@ -141,6 +150,16 @@
     /* tool buttons (single active) */
     .tool-btn { appearance:none; border:1px solid #d1d5db; background:#f8fafc; color:#111827; padding:6px 10px; border-radius:8px; font-size:13px; cursor:pointer; }
     .tool-btn.active { background:#111827; color:#fff; border-color:#111827; }
+
+    /* Two-line toolbar for Research actions */
+    .toolbar { display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+    .toolbar .break { flex-basis:100%; height:0; }
+
+    /* aligned rows */
+    .toolbar.center { justify-content: center; }
+    .toolbar.actions { margin-top: 2px; }
+    /* slim action buttons to match tool buttons */
+    .btn-slim { font-size:13px; padding:6px 10px; border-radius:8px; }
 
     /* annotation table */
     .tbl { width: 100%; border-collapse: collapse; }
@@ -170,6 +189,7 @@
     #searchResults .result-item { padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
     /* credit footer inside bottombar */
     .creditbar { flex: 0 0 auto; border-top: 1px solid #e5e7eb; padding-top: 6px; }
+    .bottombar.collapsed .creditbar { border-top: none; padding-top: 0; }
     /* right-click coordinate popup */
     .coordmenu {
       position: absolute; z-index: 2500; display: none;
@@ -215,6 +235,8 @@
       <button id="tabResearch" class="tab-btn">Research</button>
       <button id="tabSearch" class="tab-btn">Search</button>
       <button id="tabMore" class="tab-btn">More</button>
+      <span class="spacer"></span>
+      <button id="barHideBtn" class="tab-btn" title="Hide settings">Hide</button>
     </div>
     <div id="panelDivider" class="section-sep"><span id="panelDividerLabel">Control</span></div>
 
@@ -258,15 +280,17 @@
     </div>
 
     <div id="panelResearch" class="tab-panel">
-      <div class="inline" style="gap:14px;">
+      <div class="toolbar">
         <span class="lbl">Tool</span>
         <button id="btnPoint" type="button" class="tool-btn">Point</button>
         <button id="btnLine" type="button" class="tool-btn">Line</button>
-        <button id="btnPoly" type="button" class="tool-btn">Object (polygon)</button>
-        <button id="importCsvBtn" type="button" class="btn-green">Import CSV</button>
+        <button id="btnPoly" type="button" class="tool-btn">Object</button>
+      </div>
+      <div class="toolbar actions center">
+        <button id="importCsvBtn" type="button" class="btn-green btn-slim">Load</button>
         <input id="importCsvInput" type="file" accept=".csv,text/csv" style="display:none;" />
-        <button id="exportCsv" type="button" disabled>Export CSV</button>
-        <button id="researchClear" class="btn-red">Clear</button>
+        <button id="exportCsv" type="button" class="btn-slim" disabled>Save</button>
+        <button id="researchClear" class="btn-red btn-slim">Clear</button>
       </div>
 
       <div class="small muted" style="margin-top:6px;">Tip: In <b>Line</b> and <b>Object</b> modes, press <b>Enter</b> to finish drawing.</div>
@@ -314,7 +338,9 @@
       </div>
     </div>
     <div class="creditbar small muted">
-      © OpenStreetMap contributors · Tiles via Allmaps · Built with OpenLayers
+      <span>© OpenStreetMap contributors · Tiles via Allmaps · Built with OpenLayers</span>
+      <span class="spacer"></span>
+      <button id="barShowBtn" class="tab-btn" title="Show settings" style="display:none;">Show</button>
     </div>
   </div>
 
@@ -545,13 +571,16 @@
       const bar = document.querySelector('.bottombar');
       const grip = document.getElementById('barResizer');
       if (!bar || !grip) return;
-      const MIN_H = 120; // px
+      const MIN_H = 150; // px – ensure tabs + separator + credit always visible
       function clamp2(v,a,b){ return Math.max(a, Math.min(b, v)); }
       function apply(h){ bar.style.height = h + 'px'; }
 
       // Restore saved height if available
       const saved = Number(localStorage.getItem('barH') || '');
-      if (!Number.isNaN(saved) && saved > 0) apply(saved);
+      if (!Number.isNaN(saved) && saved > 0) {
+        const vh = window.innerHeight || document.documentElement.clientHeight || saved;
+        apply(clamp2(saved, MIN_H, Math.round(vh * 0.9)));
+      }
 
       let draggingBar = false;
       grip.addEventListener('pointerdown', (e) => {
@@ -573,6 +602,57 @@
       window.addEventListener('pointercancel', () => { draggingBar = false; });
       // Double-click to reset to default (uses CSS var --tabH)
       grip.addEventListener('dblclick', () => { bar.style.height = ''; localStorage.removeItem('barH'); });
+    })();
+
+    // --- Collapse / Expand bottom bar (keep credit visible) ---
+    (function(){
+      const bar = document.querySelector('.bottombar');
+      const btnHide = document.getElementById('barHideBtn');
+      const btnShow = document.getElementById('barShowBtn');
+      if (!bar || !btnHide || !btnShow) return;
+
+      function expandToSaved(){
+        const saved = Number(localStorage.getItem('barH') || '');
+        if (!Number.isNaN(saved) && saved > 0) {
+          const vh = window.innerHeight || document.documentElement.clientHeight || saved;
+          const clamped = Math.max(120, Math.min(saved, Math.round(vh * 0.9)));
+          bar.style.height = clamped + 'px';
+        } else {
+          bar.style.height = '';
+        }
+      }
+
+      function collapseBar(){
+        try {
+          const h = Math.round(bar.getBoundingClientRect().height);
+          if (h > 0) localStorage.setItem('barH', String(h));
+        } catch(_){ }
+        bar.classList.add('collapsed');
+        bar.style.height = '';
+        localStorage.setItem('barCollapsed','1');
+        btnShow.style.display = '';
+      }
+
+      function expandBar(){
+        bar.classList.remove('collapsed');
+        expandToSaved();
+        localStorage.removeItem('barCollapsed');
+        btnShow.style.display = 'none';
+      }
+
+      if (btnHide) btnHide.addEventListener('click', collapseBar);
+      if (btnShow) btnShow.addEventListener('click', expandBar);
+
+      // Apply saved collapsed state on load
+      if (localStorage.getItem('barCollapsed') === '1') {
+        bar.classList.add('collapsed');
+        bar.style.height = '';
+        btnShow.style.display = '';
+      } else {
+        // ensure saved height is restored if not already by resizer init
+        // (safe to call; it will no-op if inline height already set)
+        expandToSaved();
+      }
     })();
 
     // Basemap switching
