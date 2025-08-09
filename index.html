@@ -144,6 +144,9 @@
       /* Bigger resizer target on mobile */
       .bar-resizer { height: 28px; }
       .bar-resizer .grip { width: 72px; height: 6px; }
+      /* Mobile: split Research toolbar into two lines */
+      .toolbar { flex-wrap: wrap; justify-content: center; }
+      .toolbar .break { display:block; flex-basis:100%; height:0; }
     }
     .tab-panel { display:none; width:100%; gap:10px; align-items:stretch; flex-direction:column; flex:1 1 auto; min-height:0; overflow:auto; }
     .tab-panel.active { display:flex; }
@@ -151,9 +154,9 @@
     .tool-btn { appearance:none; border:1px solid #d1d5db; background:#f8fafc; color:#111827; padding:6px 10px; border-radius:8px; font-size:13px; cursor:pointer; }
     .tool-btn.active { background:#111827; color:#fff; border-color:#111827; }
 
-    /* Two-line toolbar for Research actions */
-    .toolbar { display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
-    .toolbar .break { flex-basis:100%; height:0; }
+    /* Toolbar: desktop = single line (centered); mobile = two lines */
+    .toolbar { display:flex; gap:14px; align-items:center; justify-content:center; flex-wrap:nowrap; }
+    .toolbar .break { display:none; }
 
     /* annotation table */
     .tbl { width: 100%; border-collapse: collapse; }
@@ -274,7 +277,6 @@
 
     <div id="panelResearch" class="tab-panel">
       <div class="toolbar">
-        <span class="lbl">Tool</span>
         <button id="btnPoint" type="button" class="tool-btn">Point</button>
         <button id="btnLine" type="button" class="tool-btn">Line</button>
         <button id="btnPoly" type="button" class="tool-btn">Object</button>
@@ -285,7 +287,7 @@
         <button id="researchClear" class="btn-red">Clear</button>
       </div>
 
-      <div class="small muted" style="margin-top:6px;">Tip: In <b>Line</b> and <b>Object</b> modes, press <b>Enter</b> to finish drawing.</div>
+      <div class="small muted" style="margin-top:6px;">Tip: In <b>Line</b> and <b>Object</b> modes, press <b>Enter</b> or click on the last point to finish drawing.</div>
 
       <div class="anno-wrap">
         <table id="annoTable" class="tbl">
