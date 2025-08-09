@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Allmaps overlay on OpenLayers</title>
+  <title>Vietnam Map Archive viewer</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <!-- OpenLayers CDN -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.5.2/ol.css">
@@ -54,6 +54,14 @@
       /* stack: tabs (fixed) + active panel (scroll) + credits (fixed) */
       display: flex; flex-direction: column; gap: 10px; align-items: stretch;
       height: var(--barH, var(--tabH)); max-height: 90vh; min-height: var(--barMin, 150px); overflow: hidden; box-sizing: border-box;
+      /* Force compositing/painting on mobile Safari to avoid transparent-on-load bug */
+      background-color: rgba(255,255,255,0.97); /* explicit color layer */
+      -webkit-transform: translateZ(0);
+      transform: translateZ(0);
+      backface-visibility: hidden;
+      will-change: transform;
+      isolation: isolate; /* new stacking context above map */
+      -webkit-overflow-scrolling: touch; /* smooth panel scroll on iOS */
     }
     /* collapse/expand bottom bar except credit */
     .bottombar.collapsed { height: auto; min-height: 0; padding-top: 4px; padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px)); }
