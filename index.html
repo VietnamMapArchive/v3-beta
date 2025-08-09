@@ -8,7 +8,17 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.5.2/ol.css">
   <script src="https://cdn.jsdelivr.net/npm/ol@v7.5.2/dist/ol.js"></script>
   <style>
+    /* Map logo */
+    .map-logo { position: absolute; top: 10px; left: 10px; z-index: 1100; width: 60px; height: auto; border-radius: 8px; background: rgba(255,255,255,0.75); padding: 4px 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); pointer-events: none; }
+    /* Reposition OpenLayers controls: zoom at top-right, rotate (north-up) below it (closer together) */
+    .ol-zoom { top: 10px; right: 10px; left: auto; display: flex; flex-direction: column; gap: var(--ctlGap); z-index: 1100; }
+    .ol-rotate { top: calc(10px + (var(--ctlSz) * 2) + var(--ctlGap) + 8px); right: 10px; left: auto; z-index: 1100; }
+    /* Zoom & north-up button sizes */
+    .ol-zoom button, .ol-rotate button { width: var(--ctlSz); height: var(--ctlSz); font-size: 16px; border-radius: 8px; }
+    .ol-rotate button .ol-compass { font-size: 12px; }
     html, body { height: 100%; margin: 0; }
+    :root { --tabH: calc(100vh / 3); }
+    :root { --ctlSz: 34px; --ctlGap: 4px; }
     #map { position: relative; width: 100%; height: 100%; }
     .panel {
       position: absolute; top: 10px; left: 10px; z-index: 1000;
@@ -36,9 +46,24 @@
     .kv-key { font-weight: 600; color: #334155; white-space: nowrap; }
     .kv-val { color: #111827; overflow-wrap: anywhere; }
     .badge { display:inline-block; padding:1px 6px; border-radius:999px; background:#eef2ff; color:#3730a3; font-size:11px; }
-    .bottombar { position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 1000; background: rgba(255,255,255,0.95); border-radius: 12px; padding: 8px 10px; box-shadow: 0 6px 18px rgba(0,0,0,0.15); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .bottombar {
+      position: absolute; left: 0; right: 0; bottom: 0; z-index: 1000;
+      background: rgba(255,255,255,0.95); border-radius: 12px 12px 0 0; padding: 8px 10px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+      /* stack: tabs (fixed) + active panel (scroll) + credits (fixed) */
+      display: flex; flex-direction: column; gap: 10px; align-items: stretch;
+      height: var(--barH, var(--tabH)); max-height: 90vh; overflow: hidden;
+    }
+    /* drag handle to resize bottom bar */
+    .bar-resizer { flex: 0 0 auto; height: 12px; cursor: ns-resize; display: flex; align-items: center; justify-content: center; }
+    .bar-resizer .grip { width: 42px; height: 4px; border-radius: 999px; background: #d1d5db; }
+    .bar-resizer:hover .grip { background: #9ca3af; }
     .bottombar .lbl { font-size: 12px; color: #333; margin-right: 6px; }
     .bottombar .spacer { flex: 1; }
+    /* Bigger action buttons */
+    .btn-lg { font-size: 15px; padding: 10px 16px; border-radius: 10px; }
+    .btn-green { background:#10b981; }
+    .btn-green:hover { background:#059669; }
     .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: none; align-items: center; justify-content: center; z-index: 2000; }
     .modal.show { display: flex; }
     .modal .content { background: #fff; max-width: 720px; width: min(720px, 92vw); max-height: 80vh; overflow: auto; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); padding: 16px 18px; }
@@ -61,12 +86,47 @@
     .handle-h { cursor: ns-resize; }
     .lens-handle { cursor: nwse-resize; }
 
-    .range { width: 160px; }
+    .range { width: 100%; }
     /* tabs */
     .tabs { display:flex; gap:8px; margin-bottom:6px; }
     .tab-btn { appearance:none; border:1px solid #d1d5db; background:#f8fafc; color:#111827; padding:6px 10px; border-radius:8px; font-size:13px; cursor:pointer; }
+    /* labeled separator under tabs */
+    .section-sep { display:flex; align-items:center; gap:10px; margin:4px 0 8px; }
+    .section-sep::before, .section-sep::after { content:""; flex:1; height:2px; background: linear-gradient(to right, transparent, #cbd5e1, transparent); }
+    .section-sep span { font-size:12px; font-weight:600; color:#111827; background: rgba(255,255,255,0.95); border:1px solid #e5e7eb; border-radius:999px; padding:3px 10px; }
+
+    /* Simplify the tab separator: no label, single line */
+    .section-sep { display:block; height:1px; background:#cbd5e1; margin:6px 0 8px; }
+    .section-sep::before, .section-sep::after { content:none; }
+    .section-sep span { display:none; }
     .tab-btn.active { background:#111827; color:#fff; border-color:#111827; }
-    .tab-panel { display:none; width:100%; gap:10px; align-items:center; flex-wrap:wrap; }
+
+    /* colored action buttons */
+    .btn-blue  { background:#2563eb; color:#fff; }
+    .btn-blue:hover  { background:#1d4ed8; }
+    .btn-indigo{ background:#6366f1; color:#fff; }
+    .btn-indigo:hover{ background:#4f46e5; }
+    .btn-red   { background:#ef4444; color:#fff; }
+    .btn-red:hover   { background:#dc2626; }
+    /* Control panel 4-column grid */
+    .control-grid { display:grid; grid-template-columns: max-content 1fr max-content 1fr; grid-auto-rows: min-content; gap: 12px 16px; align-items: end; }
+    .control-grid .inline { min-width: 0; }
+    .control-grid .lbl { align-self: end; margin-right: 0; }
+    .control-grid .span3 { grid-column: 1 / span 3; }
+    .control-grid .right { justify-self: end; align-self: end; }
+    @media (max-width: 1100px) {
+      .control-grid { grid-template-columns: 1fr 1fr; }
+      .control-grid .span3 { grid-column: 1 / -1; }
+      .control-grid .right { justify-self: start; }
+    }
+    @media (max-width: 760px) {
+      /* Mobile: two columns => Label | Selector */
+      .control-grid { grid-template-columns: max-content 1fr; }
+      /* Keep controls compact; make overlay input the same visual width as basemap */
+      .control-grid #basemap,
+      .control-grid #allmapsId { width: min(70vw, 260px); }
+    }
+    .tab-panel { display:none; width:100%; gap:10px; align-items:stretch; flex-direction:column; flex:1 1 auto; min-height:0; overflow:auto; }
     .tab-panel.active { display:flex; }
     /* tool buttons (single active) */
     .tool-btn { appearance:none; border:1px solid #d1d5db; background:#f8fafc; color:#111827; padding:6px 10px; border-radius:8px; font-size:13px; cursor:pointer; }
@@ -77,10 +137,45 @@
     .tbl th, .tbl td { border: 1px solid #e5e7eb; padding: 6px 8px; font-size: 12px; }
     .tbl th { background: #f8fafc; text-align: left; font-weight: 600; }
     .tbl input[type="text"] { width: 100%; padding: 4px 6px; font-size: 12px; border: 1px solid #d1d5db; border-radius: 6px; }
+    /* annotation list scroll container */
+    .anno-wrap { width: 100%; margin-top: 8px; flex:1 1 auto; min-height:0; overflow:auto; }
+    /* keep table header visible while scrolling */
+    .tbl thead th { position: sticky; top: 0; background: #f8fafc; z-index: 1; }
+
+    /* search panel */
+    .results-wrap { width: 100%; margin-top: 8px; flex:1 1 auto; min-height:0; overflow:auto; }
+    .results { display: grid; gap: 6px; }
+    .result-item { border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 10px; cursor: pointer; background:#fff; }
+    .result-item:hover { background: #f8fafc; }
+    .result-title { font-size: 13px; color:#111827; font-weight:600; }
+    .result-sub { font-size: 12px; color:#4b5563; }
+    /* cleaner two-column layout for search results */
+    .result-item { display: flex; gap: 12px; align-items: center; }
+    .result-item .col-left { flex: 1; min-width: 0; }
+    .result-item .col-right { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; }
+    .btnAddSearch { padding: 6px 10px; font-size: 12px; border-radius: 8px; }
+
+    /* Results fill the panel; panel scrolls within --tabH */
+    #searchResults { max-height: none; overflow: visible; }
+    #searchResults .result-item { padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
+    /* credit footer inside bottombar */
+    .creditbar { flex: 0 0 auto; border-top: 1px solid #e5e7eb; padding-top: 6px; }
+    /* right-click coordinate popup */
+    .coordmenu {
+      position: absolute; z-index: 2500; display: none;
+      background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18); padding: 10px; min-width: 220px;
+    }
+    .coordmenu .hd { font-weight: 600; font-size: 13px; color:#111827; margin-bottom: 6px; }
+    .coordmenu .val { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12px; color:#111827; background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:6px 8px; cursor: pointer; user-select: all; }
+    .coordmenu .sub { font-size: 12px; color:#6b7280; margin-top: 6px; }
+    .coordmenu .actions { display:flex; gap:8px; margin-top:8px; }
+    .coordmenu button { padding: 6px 10px; font-size: 12px; border-radius: 8px; background:#111827; color:#fff; border:none; cursor:pointer; }
   </style>
 </head>
 <body>
   <div id="map">
+    <img class="map-logo" src="https://raw.githubusercontent.com/lqtue/VMA/main/data/logo.png" alt="Logo" />
     <div id="dividerX" class="divider-v"></div>
     <div id="dividerY" class="divider-h"></div>
 
@@ -91,46 +186,64 @@
     <div id="dividerHandleY" class="handle handle-h" title="Drag split (Y)"></div>
   </div>
 
+  <div id="coordMenu" class="coordmenu" role="dialog" aria-label="Coordinates">
+    <div class="hd">Coordinates (lon, lat)</div>
+    <div id="coordValue" class="val">—</div>
+    <div class="sub">Right-click shows location; click the value to copy.</div>
+    <div class="actions">
+      <button id="coordCopy" type="button">Copy</button>
+      <button id="coordClose" type="button">Close</button>
+    </div>
+  </div>
+
   <div class="bottombar">
+    <div id="barResizer" class="bar-resizer" role="separator" aria-orientation="vertical" title="Drag to resize">
+      <div class="grip"></div>
+    </div>
     <div class="tabs">
       <button id="tabControl" class="tab-btn active">Control</button>
       <button id="tabResearch" class="tab-btn">Research</button>
+      <button id="tabSearch" class="tab-btn">Search</button>
+      <button id="tabMore" class="tab-btn">More</button>
     </div>
+    <div id="panelDivider" class="section-sep"><span id="panelDividerLabel">Control</span></div>
 
     <div id="panelControl" class="tab-panel active">
-      <div class="inline">
-        <span class="lbl">Basemap</span>
-        <select id="basemap">
-          <option value="osm" selected>OpenStreetMap</option>
-          <option value="g-streets">Google Streets (see note)</option>
-          <option value="g-satellite">Google Satellite (see note)</option>
-        </select>
+      <div class="control-grid">
+        <!-- Row 1: labels -->
+        <div class="lbl">Basemap</div>
+        <div class="inline">
+          <select id="basemap">
+            <option value="osm" selected>OpenStreetMap</option>
+            <option value="g-streets">Google Streets (see note)</option>
+            <option value="g-satellite">Google Satellite (see note)</option>
+          </select>
+        </div>
+        <div class="lbl">View</div>
+        <div class="inline">
+          <select id="viewMode">
+            <option value="overlay" selected>Overlay</option>
+            <option value="side-x">Side-by-side X</option>
+            <option value="side-y">Side-by-side Y</option>
+            <option value="spy">Spyglass</option>
+          </select>
+        </div>
+
+        <!-- Row 2: labels/controls -->
+        <div class="lbl">Overlay</div>
+        <div class="inline">
+          <input class="w-100" type="text" id="allmapsId" placeholder="e.g., 9b1b2f08…" />
+        </div>
+        <div class="lbl">Opacity</div>
+        <div class="inline">
+          <input id="opacityRange" class="range" type="range" min="0" max="1" step="0.01" value="0.70" />
+          <span id="opLabel" class="small muted">0.70</span>
+        </div>
       </div>
-
-      <div class="inline" style="flex:1; min-width: 260px;">
-        <span class="lbl">Image&nbsp;ID</span>
-        <input class="w-100" type="text" id="allmapsId" placeholder="e.g., 9b1b2f08a0e5b4ad..." />
-        <button id="loadBtn">Load</button>
+      <div class="inline" style="gap:12px; align-items:center; justify-content:center;">
+        <button id="loadBtn" class="btn-green btn-lg">Load</button>
+        <button id="metaBtn" class="btn-lg" title="Show metadata" disabled>Metadata</button>
       </div>
-
-      <div class="inline">
-        <span class="lbl">View</span>
-        <select id="viewMode">
-          <option value="overlay" selected>Overlay</option>
-          <option value="side-x">Side-by-side X</option>
-          <option value="side-y">Side-by-side Y</option>
-          <option value="spy">Spyglass</option>
-        </select>
-      </div>
-
-      <div class="inline">
-        <span class="lbl">Opacity</span>
-        <input id="opacityRange" class="range" type="range" min="0" max="1" step="0.01" value="0.70" />
-        <span id="opLabel" class="small muted">0.70</span>
-      </div>
-
-      <button id="metaBtn" title="Show metadata" disabled>Metadata</button>
-
       <div id="status" class="small muted" style="flex:1; min-width: 200px;">Enter an ID and click Load. You can also pass <code>?id=...</code> in the URL.</div>
     </div>
 
@@ -140,15 +253,15 @@
         <button id="btnPoint" type="button" class="tool-btn">Point</button>
         <button id="btnLine" type="button" class="tool-btn">Line</button>
         <button id="btnPoly" type="button" class="tool-btn">Object (polygon)</button>
-        <button id="exportCsv" type="button">Export CSV</button>
-        <button id="importCsvBtn" type="button">Import CSV</button>
+        <button id="importCsvBtn" type="button" class="btn-green">Import CSV</button>
         <input id="importCsvInput" type="file" accept=".csv,text/csv" style="display:none;" />
-        <button id="researchClear">Clear</button>
+        <button id="exportCsv" type="button" disabled>Export CSV</button>
+        <button id="researchClear" class="btn-red">Clear</button>
       </div>
 
-      <div class="small muted" style="margin-top:6px;">Tip: In **Line** mode, press <b>Enter</b> to finish measuring.</div>
+      <div class="small muted" style="margin-top:6px;">Tip: In <b>Line</b> and <b>Object</b> modes, press <b>Enter</b> to finish drawing.</div>
 
-      <div style="width:100%; margin-top:8px;">
+      <div class="anno-wrap">
         <table id="annoTable" class="tbl">
           <thead>
             <tr><th>#</th><th>Type</th><th>Label</th><th>Metric</th><th>Actions</th></tr>
@@ -156,6 +269,42 @@
           <tbody id="annoTbody"></tbody>
         </table>
       </div>
+    </div>
+
+    <div id="panelSearch" class="tab-panel">
+      <div class="inline" style="gap:10px; align-items: center; width:100%;">
+        <span class="lbl">Place</span>
+        <input id="searchQuery" type="text" class="w-100" placeholder="e.g., Ho Chi Minh City, Notre-Dame Cathedral" />
+        <button id="searchBtn" type="button" class="btn-green">Search</button>
+        <button id="searchClear" type="button" class="btn-red">Clear</button>
+      </div>
+      <div class="small muted" style="margin-top:6px;">Search powered by Nominatim / OpenStreetMap. Click a result to zoom. Use the <b>Add</b> button on a result to add it to annotations (the search list clears after adding).</div>
+      <div class="results-wrap">
+        <div id="searchResults" class="results"></div>
+      </div>
+    </div>
+    <div id="panelMore" class="tab-panel">
+      <div class="inline" style="gap:10px; align-items:center; flex-wrap:wrap;">
+        <!-- TODO: replace example.com URLs with your real destinations -->
+        <a class="tool-btn" href="https://example.com/about" target="_blank" rel="noreferrer">About Us</a>
+        <a class="tool-btn" href="https://example.com/blog" target="_blank" rel="noreferrer">Blog</a>
+        <a class="tool-btn" href="https://example.com/contact" target="_blank" rel="noreferrer">Get in touch</a>
+      </div>
+      <div class="small" style="margin-top:10px;">
+        <div style="font-weight:600; margin-bottom:6px;">Tips & Shortcuts</div>
+        <ul style="margin:0; padding-left: 18px; display:grid; gap:6px;">
+          <li><b>Rotate map:</b> hold <b>Ctrl</b> (Windows/Linux) or <b>⌘ Cmd</b> (macOS) and drag. On touchpads, use a two‑finger rotate gesture. Click the rotate control to reset north‑up.</li>
+          <li><b>Zoom:</b> scroll the mouse wheel or double‑click to zoom in.</li>
+          <li><b>View modes:</b> pick <i>Overlay / Side‑by‑side X / Side‑by‑side Y / Spyglass</i>. In side‑by‑side, drag the small circle handle to move the divider. In spyglass, drag the small knob on the right edge to resize.</li>
+          <li><b>Annotations:</b> choose Point/Line/Object. Press <b>Enter</b> to finish a line/polygon, <b>Esc</b> to cancel the current sketch. Edit labels in the table; use <i>Zoom</i> or <i>Delete</i> in the Actions column. Use <i>Export CSV</i> / <i>Import CSV</i> to save/restore.</li>
+          <li><b>Search:</b> type a place and click <i>Search</i>. Click a result to zoom. Use the <i>Add</i> button on a result to add it to annotations (the search list clears after adding).</li>
+          <li><b>Coordinates:</b> right‑click anywhere on the map to show lon,lat. Click the value or the <i>Copy</i> button to copy to clipboard.</li>
+          <li><b>Opacity:</b> use the slider to adjust the overlay transparency.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="creditbar small muted">
+      © OpenStreetMap contributors · Tiles via Allmaps · Built with OpenLayers
     </div>
   </div>
 
@@ -239,55 +388,78 @@
 
     // Research annotations layer (points/lines/polygons) with labels
     const researchSource = new ol.source.Vector();
-    const researchLayer = new ol.layer.Vector({
+    const researchLayer = new ol.layer.VectorImage({
       source: researchSource,
       zIndex: 20,
-      style: (feature, resolution) => {
-        const geom = feature.getGeometry();
-        const type = geom.getType();
-        const label = feature.get('label');
-        const baseStroke = new ol.style.Stroke({ color: '#2563eb', width: 2 });
-        const baseFill = new ol.style.Fill({ color: 'rgba(37,99,235,0.15)' });
-        const styles = [];
-        if (type === 'Point') {
-          styles.push(new ol.style.Style({
-            image: new ol.style.Circle({ radius: 5, fill: new ol.style.Fill({ color: '#2563eb' }), stroke: new ol.style.Stroke({ color: '#ffffff', width: 2 }) })
-          }));
-          if (label) {
-            styles.push(new ol.style.Style({
-              text: new ol.style.Text({
-                text: String(label), font: '12px system-ui, Arial',
-                fill: new ol.style.Fill({ color: '#111827' }),
-                stroke: new ol.style.Stroke({ color: 'rgba(255,255,255,0.9)', width: 3 }),
-                offsetY: -12, overflow: true
-              })
-            }));
-          }
-        } else if (type === 'LineString' || type === 'MultiLineString') {
-          styles.push(new ol.style.Style({ stroke: baseStroke }));
-        } else { // Polygon / MultiPolygon
-          styles.push(new ol.style.Style({ stroke: baseStroke, fill: baseFill }));
-          if (label) {
-            styles.push(new ol.style.Style({
-              geometry: (f) => f.getGeometry().getInteriorPoint(),
-              text: new ol.style.Text({
-                text: String(label), font: '12px system-ui, Arial',
-                fill: new ol.style.Fill({ color: '#111827' }),
-                stroke: new ol.style.Stroke({ color: 'rgba(255,255,255,0.9)', width: 3 }),
-                overflow: true
-              })
-            }));
-          }
+      imageRatio: 2,
+      style: (() => {
+        const stroke = new ol.style.Stroke({ color: '#2563eb', width: 2 });
+        const fill   = new ol.style.Fill({ color: 'rgba(37,99,235,0.15)' });
+        const pointBase = new ol.style.Style({
+          image: new ol.style.Circle({
+            radius: 5,
+            fill: new ol.style.Fill({ color: '#2563eb' }),
+            stroke: new ol.style.Stroke({ color: '#ffffff', width: 2 })
+          })
+        });
+        const lineBase = new ol.style.Style({ stroke });
+        const polyBase = new ol.style.Style({ stroke, fill });
+        const cache = new Map(); // key = `${type}|${label}`
+
+        function labelStyle(text, poly) {
+          return new ol.style.Style({
+            geometry: poly ? (f) => f.getGeometry().getInteriorPoint() : undefined,
+            text: new ol.style.Text({
+              text,
+              font: '12px system-ui, Arial',
+              fill: new ol.style.Fill({ color: '#111827' }),
+              stroke: new ol.style.Stroke({ color: 'rgba(255,255,255,0.9)', width: 3 }),
+              offsetY: poly ? 0 : -12,
+              overflow: true
+            })
+          });
         }
-        return styles;
-      },
+
+        return (feature) => {
+          const type  = feature.getGeometry().getType();
+          const label = feature.get('label') || '';
+          if (!label) {
+            if (type === 'Point') return [pointBase];
+            if (type.includes('Line')) return [lineBase];
+            return [polyBase];
+          }
+          const key = `${type}|${label}`;
+          let styles = cache.get(key);
+          if (!styles) {
+            if (type === 'Point') styles = [pointBase, labelStyle(label, false)];
+            else if (type.includes('Line')) styles = [lineBase];
+            else styles = [polyBase, labelStyle(label, true)];
+            cache.set(key, styles);
+          }
+          return styles;
+        };
+      })(),
       properties: { 'name': 'research' }
+    });
+
+    // Search highlight layer
+    const searchSource = new ol.source.Vector();
+    const searchLayer = new ol.layer.VectorImage({
+      source: searchSource,
+      zIndex: 25,
+      imageRatio: 2,
+      style: new ol.style.Style({
+        image: new ol.style.Circle({ radius: 6, fill: new ol.style.Fill({ color: '#f59e0b' }), stroke: new ol.style.Stroke({ color: '#fff', width: 2 }) }),
+        stroke: new ol.style.Stroke({ color: '#f59e0b', width: 2, lineDash: [6,4] }),
+        fill: new ol.style.Fill({ color: 'rgba(245,158,11,0.12)' })
+      }),
+      properties: { 'name': 'search' }
     });
 
     // Map
     const map = new ol.Map({
       target: 'map',
-      layers: [osmLayer, googleStreets, googleSatellite, overlayLayer, footprintLayer, researchLayer],
+      layers: [osmLayer, googleStreets, googleSatellite, overlayLayer, footprintLayer, researchLayer, searchLayer],
       view: new ol.View({
         center: ol.proj.fromLonLat([106.70098, 10.77653]), // default center (HCMC)
         zoom: 12,
@@ -319,8 +491,12 @@
     // Tabs
     const tabControl = document.getElementById('tabControl');
     const tabResearch = document.getElementById('tabResearch');
+    const tabSearch = document.getElementById('tabSearch');
+    const tabMore = document.getElementById('tabMore');
     const panelControl = document.getElementById('panelControl');
     const panelResearch = document.getElementById('panelResearch');
+    const panelSearch = document.getElementById('panelSearch');
+    const panelMore = document.getElementById('panelMore');
 
     // Research UI (single tool + table)
     const btnPoint = document.getElementById('btnPoint');
@@ -331,6 +507,16 @@
     const exportCsvBtn = document.getElementById('exportCsv');
     const importCsvBtn = document.getElementById('importCsvBtn');
     const importCsvInput = document.getElementById('importCsvInput');
+
+    // Divider label under tabs
+    const dividerLabel = document.getElementById('panelDividerLabel');
+    function setDivider(text){ if (dividerLabel) dividerLabel.textContent = text; }
+
+    // Search UI
+    const searchQuery = document.getElementById('searchQuery');
+    const searchBtn = document.getElementById('searchBtn');
+    const searchClear = document.getElementById('searchClear');
+    const searchResults = document.getElementById('searchResults');
 
     const viewModeSel = document.getElementById('viewMode');
     const opacityRange = document.getElementById('opacityRange');
@@ -343,6 +529,41 @@
 
     const lensEl = document.getElementById('lens');
     const lensHandle = document.getElementById('lensHandle');
+
+    // --- Bottom bar resizer ---
+    (function(){
+      const bar = document.querySelector('.bottombar');
+      const grip = document.getElementById('barResizer');
+      if (!bar || !grip) return;
+      const MIN_H = 120; // px
+      function clamp2(v,a,b){ return Math.max(a, Math.min(b, v)); }
+      function apply(h){ bar.style.height = h + 'px'; }
+
+      // Restore saved height if available
+      const saved = Number(localStorage.getItem('barH') || '');
+      if (!Number.isNaN(saved) && saved > 0) apply(saved);
+
+      let draggingBar = false;
+      grip.addEventListener('pointerdown', (e) => {
+        draggingBar = true; grip.setPointerCapture(e.pointerId); e.preventDefault();
+      });
+      window.addEventListener('pointermove', (e) => {
+        if (!draggingBar) return;
+        const vh = window.innerHeight || document.documentElement.clientHeight;
+        const newH = clamp2(vh - e.clientY, MIN_H, Math.round(vh * 0.9));
+        apply(newH);
+      });
+      function stopBarDrag(){
+        if (!draggingBar) return;
+        draggingBar = false;
+        const h = Math.round(bar.getBoundingClientRect().height);
+        localStorage.setItem('barH', String(h));
+      }
+      window.addEventListener('pointerup', stopBarDrag);
+      window.addEventListener('pointercancel', () => { draggingBar = false; });
+      // Double-click to reset to default (uses CSS var --tabH)
+      grip.addEventListener('dblclick', () => { bar.style.height = ''; localStorage.removeItem('barH'); });
+    })();
 
     // Basemap switching
     function setBasemap(name) {
@@ -363,16 +584,65 @@
 
     // Tabs behavior
     function showControlTab(){
-      tabControl.classList.add('active'); tabResearch.classList.remove('active');
-      panelControl.classList.add('active'); panelResearch.classList.remove('active');
+      tabControl.classList.add('active');
+      tabResearch.classList.remove('active');
+      tabSearch.classList.remove('active');
+      if (tabMore) tabMore.classList.remove('active');
+
+      panelControl.classList.add('active');
+      panelResearch.classList.remove('active');
+      panelSearch.classList.remove('active');
+      if (panelMore) panelMore.classList.remove('active');
+
       if (typeof setActiveTool === 'function') setActiveTool('none');
+      setDivider('Control');
     }
     function showResearchTab(){
-      tabResearch.classList.add('active'); tabControl.classList.remove('active');
-      panelResearch.classList.add('active'); panelControl.classList.remove('active');
+      tabResearch.classList.add('active');
+      tabControl.classList.remove('active');
+      tabSearch.classList.remove('active');
+      if (tabMore) tabMore.classList.remove('active');
+
+      panelResearch.classList.add('active');
+      panelControl.classList.remove('active');
+      panelSearch.classList.remove('active');
+      if (panelMore) panelMore.classList.remove('active');
+      setDivider('Research');
+    }
+    function showSearchTab(){
+      tabSearch.classList.add('active');
+      tabControl.classList.remove('active');
+      tabResearch.classList.remove('active');
+      if (tabMore) tabMore.classList.remove('active');
+
+      panelSearch.classList.add('active');
+      panelControl.classList.remove('active');
+      panelResearch.classList.remove('active');
+      if (panelMore) panelMore.classList.remove('active');
+
+      if (typeof setActiveTool === 'function') setActiveTool('none');
+      setDivider('Search');
+    }
+    function showMoreTab(){
+      if (!tabMore || !panelMore) return;
+      tabMore.classList.add('active');
+      tabControl.classList.remove('active');
+      tabResearch.classList.remove('active');
+      tabSearch.classList.remove('active');
+
+      panelMore.classList.add('active');
+      panelControl.classList.remove('active');
+      panelResearch.classList.remove('active');
+      panelSearch.classList.remove('active');
+
+      if (typeof setActiveTool === 'function') setActiveTool('none');
+      setDivider('More');
     }
     if (tabControl) tabControl.addEventListener('click', showControlTab);
     if (tabResearch) tabResearch.addEventListener('click', showResearchTab);
+    if (tabSearch) tabSearch.addEventListener('click', showSearchTab);
+    if (tabMore) tabMore.addEventListener('click', showMoreTab);
+    setDivider('Control');
 
 
     // --- View modes: overlay, side-x (vertical split), side-y (horizontal split), spyglass ---
@@ -509,7 +779,7 @@
 
     // --- Research tools: single active tool (point | line | polygon) + annotation table ---
     let draw = null;
-    let keyDownFinishLine = null;
+    let keyDownFinish = null;
     let keyDownCancel = null;
     let fidCounter = 1;
 
@@ -535,9 +805,17 @@
       return '—';
     }
 
+    // Cap annotation list to N rows (then scroll)
+    function applyAnnoMaxRows(n = 5) {
+      // Heights handled by CSS (--tabH). Ensure no inline cap remains.
+      const wrap = document.querySelector('.anno-wrap');
+      if (wrap) wrap.style.maxHeight = '';
+    }
+
     function refreshAnnoTable(){
       if (!annoTbody) return;
       const feats = researchSource.getFeatures();
+      if (exportCsvBtn) exportCsvBtn.disabled = (feats.length === 0);
       let html = '';
       for (const f of feats){
         const id = getOrAssignId(f);
@@ -569,11 +847,12 @@
         const btnD = row.querySelector('button.anno-del');
         if (btnD) btnD.addEventListener('click', () => { researchSource.removeFeature(f); });
       });
+      applyAnnoMaxRows(5);
     }
 
     function cleanupTool(){
       if (draw) { map.removeInteraction(draw); draw = null; }
-      if (keyDownFinishLine) { document.removeEventListener('keydown', keyDownFinishLine); keyDownFinishLine = null; }
+      if (keyDownFinish) { document.removeEventListener('keydown', keyDownFinish); keyDownFinish = null; }
       if (keyDownCancel) { document.removeEventListener('keydown', keyDownCancel); keyDownCancel = null; }
       [btnPoint, btnLine, btnPoly].forEach(b => b && b.classList.remove('active'));
     }
@@ -591,10 +870,10 @@
       draw = new ol.interaction.Draw({ source: researchSource, type, stopClick:true });
       map.addInteraction(draw);
 
-      // Enter finishes lines; Esc cancels current sketch (lines & polygons)
-      if (mode==='line') {
-        keyDownFinishLine = (e) => { if (e.key === 'Enter') { e.preventDefault(); try{ draw.finishDrawing(); }catch(_){} } };
-        document.addEventListener('keydown', keyDownFinishLine);
+      // Enter finishes (line & polygon); Esc cancels current sketch (line & polygon)
+      if (mode==='line' || mode==='polygon') {
+        keyDownFinish = (e) => { if (e.key === 'Enter') { e.preventDefault(); try{ draw.finishDrawing(); }catch(_){} } };
+        document.addEventListener('keydown', keyDownFinish);
       }
       if (mode==='line' || mode==='polygon') {
         keyDownCancel = (e) => { if (e.key === 'Escape') { e.preventDefault(); try{ draw.abortDrawing(); }catch(_){} } };
@@ -618,6 +897,147 @@
     // initial state: no tool active
     setActiveTool('none');
     refreshAnnoTable();
+
+
+    // --- Nominatim search ---
+    function escHtml(s){ return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+    function renderSearchItems(items){
+      if (!searchResults) return;
+      if (!items || !items.length){ searchResults.innerHTML = '<div class="small muted">No results.</div>'; return; }
+      searchResults.innerHTML = '';
+      items.forEach((it, idx) => {
+        const div = document.createElement('div');
+        div.className = 'result-item';
+        const title = escHtml(it.display_name || `${it.type || ''}`);
+        const sub = escHtml([it.class, it.type, it.category].filter(Boolean).join(' · '));
+        div.innerHTML = `
+            <div class="col-left">
+              <div class="result-title">${title}</div>
+              <div class="result-sub">${sub}</div>
+            </div>
+            <div class="col-right">
+              <button type="button" class="btnAddSearch">Add</button>
+            </div>
+          `;
+        // Left-click anywhere on the item still zooms
+        div.addEventListener('click', () => zoomToSearchResult(it));
+        // Add button: add to annotations (and clear search via addResultToAnnotations)
+        const addBtn = div.querySelector('.btnAddSearch');
+        if (addBtn) addBtn.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          addResultToAnnotations(it);
+        });
+        searchResults.appendChild(div);
+      });
+    }
+
+    function zoomToSearchResult(it){
+      try {
+        searchSource.clear();
+        // geometry if provided
+        if (it.geojson) {
+          const gjFmt = new ol.format.GeoJSON();
+          const feat = gjFmt.readFeature({ type:'Feature', geometry: it.geojson }, { dataProjection:'EPSG:4326', featureProjection:'EPSG:3857' });
+          feat.set('label', it.display_name || it.name || it.type || '');
+          searchSource.addFeature(feat);
+          const ext = feat.getGeometry().getExtent();
+          map.getView().fit(ext, { padding:[80,20,20,20], duration: 400, maxZoom: 18 });
+        } else if (it.boundingbox) {
+          // boundingbox: [lat_s, lat_n, lon_w, lon_e]
+          const bb = it.boundingbox.map(Number);
+          const extent = [bb[2], bb[0], bb[3], bb[1]]; // [minLon, minLat, maxLon, maxLat]
+          const ext3857 = ol.proj.transformExtent(extent, 'EPSG:4326', 'EPSG:3857');
+          const poly = ol.geom.Polygon.fromExtent(ext3857);
+          const fpoly = new ol.Feature({ geometry: poly });
+          fpoly.set('label', it.display_name || it.name || it.type || '');
+          searchSource.addFeature(fpoly);
+          map.getView().fit(ext3857, { padding:[80,20,20,20], duration: 400, maxZoom: 18 });
+        } else if (it.lat && it.lon) {
+          const c = ol.proj.fromLonLat([Number(it.lon), Number(it.lat)]);
+          const f = new ol.Feature({ geometry: new ol.geom.Point(c) });
+          f.set('label', it.display_name || it.name || it.type || '');
+          searchSource.addFeature(f);
+          map.getView().animate({ center: c, duration: 400, zoom: Math.max(map.getView().getZoom()||12, 15) });
+        }
+      } catch(e) { console.warn(e); }
+    }
+
+    function addResultToAnnotations(it){
+      try {
+        let feat = null;
+        if (it.geojson) {
+          const gjFmt = new ol.format.GeoJSON();
+          feat = gjFmt.readFeature({ type:'Feature', geometry: it.geojson }, { dataProjection:'EPSG:4326', featureProjection:'EPSG:3857' });
+        } else if (it.boundingbox) {
+          const bb = it.boundingbox.map(Number);
+          const extent = [bb[2], bb[0], bb[3], bb[1]]; // [minLon, minLat, maxLon, maxLat]
+          const ext3857 = ol.proj.transformExtent(extent, 'EPSG:4326', 'EPSG:3857');
+          const poly = ol.geom.Polygon.fromExtent(ext3857);
+          feat = new ol.Feature({ geometry: poly });
+        } else if (it.lat && it.lon) {
+          const c = ol.proj.fromLonLat([Number(it.lon), Number(it.lat)]);
+          feat = new ol.Feature({ geometry: new ol.geom.Point(c) });
+        }
+        if (!feat) return;
+        const lbl = it.display_name || it.name || it.type || '';
+        if (lbl) feat.set('label', lbl);
+        researchSource.addFeature(feat);
+        // Clear search layer and UI after adding
+        searchSource.clear();
+        if (searchResults) searchResults.innerHTML = '';
+        if (searchQuery) searchQuery.value = '';
+        refreshAnnoTable();
+      } catch(e){ console.warn(e); }
+    }
+
+    let searchAbort = null;
+    let searchTimer = null;
+
+    async function runSearchNow(){
+      const q = (searchQuery?.value || '').trim();
+      if (!q){ if (searchResults) searchResults.innerHTML = '<div class="small muted">Enter a place or address.</div>'; return; }
+
+      if (searchAbort) { try{ searchAbort.abort(); }catch(_){} }
+      searchAbort = new AbortController();
+
+      if (searchResults) searchResults.innerHTML = '<div class="small muted">Searching…</div>';
+      try {
+        const params = new URLSearchParams({
+          format:'jsonv2', q,
+          addressdetails:'1', namedetails:'1',
+          polygon_geojson:'1', limit:'10'
+        });
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
+          headers: { 'Accept':'application/json' },
+          signal: searchAbort.signal
+        });
+        if (!res.ok) throw new Error('Search failed: '+res.status);
+        const data = await res.json();
+        renderSearchItems(Array.isArray(data) ? data : []);
+      } catch(err) {
+        if (err.name === 'AbortError') return;
+        console.error(err);
+        if (searchResults) searchResults.innerHTML = '<div class="small error">Search error. Please try again.</div>';
+      }
+    }
+
+    function queueSearch(){
+      if (searchTimer) clearTimeout(searchTimer);
+      searchTimer = setTimeout(runSearchNow, 400);
+    }
+
+    if (searchBtn) searchBtn.addEventListener('click', runSearchNow);
+    if (searchQuery) {
+      searchQuery.addEventListener('input', queueSearch);
+      searchQuery.addEventListener('keydown', (e)=>{ if (e.key==='Enter') runSearchNow(); });
+    }
+    if (searchClear) searchClear.addEventListener('click', () => {
+      if (searchAbort) { try{ searchAbort.abort(); }catch(_){} }
+      if (searchResults) searchResults.innerHTML='';
+      searchSource.clear();
+      if (searchQuery) searchQuery.value='';
+    });
 
 
     // --- CSV export / import for annotations ---
@@ -723,7 +1143,105 @@
 
     // --- Dragging (pointer events) ---
     const mapEl = document.getElementById('map');
+    // --- Right-click coordinates popup ---
+    const coordMenu  = document.getElementById('coordMenu');
+    const coordValue = document.getElementById('coordValue');
+    const coordCopy  = document.getElementById('coordCopy');
+    const coordClose = document.getElementById('coordClose');
+
+    function hideCoordMenu(){ if (coordMenu){ coordMenu.style.display='none'; } }
+
+    function openCoordMenu(lon, lat, clientX, clientY){
+      if (!coordMenu) return;
+      const txt = `${lon.toFixed(6)}, ${lat.toFixed(6)}`;
+      if (coordValue) coordValue.textContent = txt;
+
+      // Show first to measure
+      coordMenu.style.display = 'block';
+
+      // clamp within viewport
+      const pad = 8;
+      const vw = window.innerWidth  || document.documentElement.clientWidth;
+      const vh = window.innerHeight || document.documentElement.clientHeight;
+      const rect = coordMenu.getBoundingClientRect();
+      let left = clientX + 4;
+      let top  = clientY + 4;
+      if (left + rect.width + pad > vw) left = Math.max(pad, vw - rect.width - pad);
+      if (top  + rect.height + pad > vh) top  = Math.max(pad, clientY - rect.height - 4);
+      left = Math.max(pad, left);
+      top  = Math.max(pad, top);
+
+      coordMenu.style.left = left + 'px';
+      coordMenu.style.top  = top  + 'px';
+    }
+
+    // Map right-click to show lon/lat
+    if (map && typeof map.getViewport === 'function') {
+      map.getViewport().addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        const pixel = map.getEventPixel(e);
+        const coord = map.getCoordinateFromPixel(pixel);
+        if (!coord) return;
+        const [lon, lat] = ol.proj.toLonLat(coord, 'EPSG:3857');
+        openCoordMenu(lon, lat, e.clientX, e.clientY);
+      });
+    }
+
+    // Copy helpers
+    async function copyText(txt){
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(txt);
+          return true;
+        }
+      } catch(_) {}
+      // fallback
+      const t = document.createElement('textarea');
+      t.value = txt; t.style.position='fixed'; t.style.left='-9999px';
+      document.body.appendChild(t); t.select();
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch(_){}
+      document.body.removeChild(t);
+      return ok;
+    }
+
+    if (coordCopy) coordCopy.addEventListener('click', async () => {
+      const txt = coordValue ? coordValue.textContent : '';
+      if (!txt || txt === '—') return;
+      const ok = await copyText(txt);
+      const old = coordCopy.textContent;
+      coordCopy.textContent = ok ? 'Copied' : 'Copy failed';
+      setTimeout(() => coordCopy.textContent = old, 900);
+    });
+
+    // Clicking the value also copies
+    if (coordValue) coordValue.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const txt = coordValue.textContent || '';
+      if (!txt || txt === '—') return;
+      const ok = await copyText(txt);
+      const old = coordValue.textContent;
+      if (ok) {
+        coordValue.textContent = 'Copied ✓';
+        setTimeout(() => { coordValue.textContent = old; }, 900);
+      }
+    });
+
+    if (coordClose) coordClose.addEventListener('click', hideCoordMenu);
+
+    // Hide when clicking outside or pressing ESC
+    document.addEventListener('pointerdown', (e) => {
+      if (!coordMenu || coordMenu.style.display!=='block') return;
+      if (e.target === coordMenu || coordMenu.contains(e.target)) return;
+      hideCoordMenu();
+    });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideCoordMenu(); });
     function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+    let rafToken = 0;
+    function schedule(fn){
+      if (rafToken) return;
+      rafToken = requestAnimationFrame(() => { rafToken = 0; fn(); });
+    }
     function onMove(e) {
       if (!mapEl) return;
       const rect = mapEl.getBoundingClientRect();
@@ -735,15 +1253,15 @@
         const cx = w/2, cy = h/2;
         const dx = x - cx, dy = y - cy;
         lensRadius = clamp(Math.sqrt(dx*dx + dy*dy), 20, Math.min(w,h)/2);
-        updateLensAndHandle(); overlayLayer.changed(); return;
+        updateLensAndHandle(); schedule(() => overlayLayer.changed()); return;
       }
       if (dragging.sideX) {
         sideRatio = clamp(x / w, 0.1, 0.9);
-        updateDividersAndHandles(); overlayLayer.changed(); return;
+        updateDividersAndHandles(); schedule(() => overlayLayer.changed());; return;
       }
       if (dragging.sideY) {
         sideRatio = clamp(y / h, 0.1, 0.9);
-        updateDividersAndHandles(); overlayLayer.changed(); return;
+        updateDividersAndHandles(); schedule(() => overlayLayer.changed());; return;
       }
     }
     function stopDrag(){ dragging = { sideX:false, sideY:false, lensR:false }; }
@@ -752,14 +1270,14 @@
     if (dividerHandleY) dividerHandleY.addEventListener('pointerdown', (e)=>{ if (currentMode!=='side-y') return; dragging.sideY=true; dividerHandleY.setPointerCapture(e.pointerId); e.preventDefault(); });
     if (lensHandle) lensHandle.addEventListener('pointerdown', (e)=>{ if (currentMode!=='spy') return; dragging.lensR=true; lensHandle.setPointerCapture(e.pointerId); e.preventDefault(); });
 
-    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointermove', onMove, { passive: true });
     window.addEventListener('pointerup', stopDrag);
     window.addEventListener('pointercancel', stopDrag);
 
     // keep helpers aligned on map changes + resize
     map.getView().on('change:center', () => { if (currentMode==='spy') updateLensAndHandle(); if (currentMode==='side-x'||currentMode==='side-y') updateDividersAndHandles(); });
     map.getView().on('change:resolution', () => { if (currentMode==='spy') updateLensAndHandle(); if (currentMode==='side-x'||currentMode==='side-y') updateDividersAndHandles(); });
-    window.addEventListener('resize', () => { updateLensAndHandle(); updateDividersAndHandles(); });
+    window.addEventListener('resize', () => { updateLensAndHandle(); updateDividersAndHandles(); applyAnnoMaxRows(5); });
 
     // init
     setMode('overlay');
@@ -899,9 +1417,8 @@
       overlayLayer.setSource(new ol.source.XYZ({
         url: tileUrl,
         crossOrigin: 'anonymous',
-        attributions: 'Tiles © Allmaps',
         maxZoom: 22,
-        tilePixelRatio: 2
+        tilePixelRatio: (window.devicePixelRatio > 1 ? 2 : 1)
       }));
       overlayLayer.setVisible(true);
 
@@ -937,13 +1454,13 @@
         renderMetadataSummary(gj, feats, extent3857);
         if (metaBtn) metaBtn.disabled = false;
         overlayLayer.changed();
-        statusEl.innerHTML = `<span class="ok">Loaded</span>: <code>${id}</code>`;
+        statusEl.innerHTML = ``;
       } catch (err) {
         console.error(err);
-        statusEl.innerHTML = `<span class="error">Failed to load metadata</span> for <code>${id}</code>. Tiles may still display if the ID is valid.`;
+        statusEl.innerHTML = ``;
         // Clear footprint extent limit so tiles can still show if metadata failed
         overlayLayer.setExtent(undefined);
-        if (metaSummary) metaSummary.textContent = 'Could not load metadata summary for this ID.';
+        if (metaSummary) metaSummary.textContent = '';
       }
     }
 
