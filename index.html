@@ -49,7 +49,7 @@
     .badge { display:inline-block; padding:1px 6px; border-radius:999px; background:#eef2ff; color:#3730a3; font-size:11px; }
     .bottombar {
       position: absolute; left: 0; right: 0; bottom: 0; z-index: 1000;
-      background: rgba(255,255,255,0.95); border-radius: 12px 12px 0 0; padding: 8px 10px;
+      background: rgba(255,255,255,0.95); border-radius: 12px 12px 0 0; padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
       box-shadow: 0 6px 18px rgba(0,0,0,0.15);
       /* stack: tabs (fixed) + active panel (scroll) + credits (fixed) */
       display: flex; flex-direction: column; gap: 10px; align-items: stretch;
@@ -144,24 +144,6 @@
       /* Bigger resizer target on mobile */
       .bar-resizer { height: 28px; }
       .bar-resizer .grip { width: 72px; height: 6px; }
-      /* On mobile: split action row into two lines and show the forced break */
-      .toolbar.actions { flex-wrap: wrap; }
-      .toolbar.actions .mobile-only { display: block; }
-      /* Mobile layout: two-line centered actions */
-      .toolbar.actions { display: grid; grid-template-columns: auto auto; justify-content: center; column-gap: 14px; row-gap: 8px; }
-      .toolbar.actions #researchClear { grid-column: 1 / -1; justify-self: center; }
-      /* Mobile: 4×2 grid
-        Row1: Tool | Point | Line | Object
-        Row2: Option | Load | Save | Clear */
-      .research-grid { 
-        display:grid; 
-        grid-template-columns: max-content auto auto auto; 
-        justify-content:center; 
-        align-items:center; 
-        column-gap:14px; 
-        row-gap:8px; 
-      }
-      .research-grid .rg-label { display:block; align-self:center; }
     }
     .tab-panel { display:none; width:100%; gap:10px; align-items:stretch; flex-direction:column; flex:1 1 auto; min-height:0; overflow:auto; }
     .tab-panel.active { display:flex; }
@@ -172,16 +154,6 @@
     /* Two-line toolbar for Research actions */
     .toolbar { display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
     .toolbar .break { flex-basis:100%; height:0; }
-    /* Research: desktop = one line of 6 buttons; mobile = 4×2 grid with labels */
-    .research-grid { display:flex; gap:14px; align-items:center; justify-content:center; flex-wrap:nowrap; }
-    .research-grid .rg-label { display:none; font-size:12px; color:#333; }
-
-    /* aligned rows */
-    .toolbar.center { justify-content: center; }
-    .toolbar.actions { margin-top: 2px; flex-wrap: nowrap; }
-    /* slim action buttons to match tool buttons */
-    .btn-slim { font-size:13px; padding:6px 10px; border-radius:8px; }
-    .mobile-only { display: none; }
 
     /* annotation table */
     .tbl { width: 100%; border-collapse: collapse; }
@@ -298,7 +270,6 @@
         <button id="loadBtn" class="btn-green btn-lg">Load</button>
         <button id="metaBtn" class="btn-lg" title="Show metadata" disabled>Metadata</button>
       </div>
-      <div id="status" class="small muted" style="flex:1; min-width: 200px;">Enter an ID and click Load. You can also pass <code>?id=...</code> in the URL.</div>
     </div>
 
     <div id="panelResearch" class="tab-panel">
@@ -307,12 +278,11 @@
         <button id="btnPoint" type="button" class="tool-btn">Point</button>
         <button id="btnLine" type="button" class="tool-btn">Line</button>
         <button id="btnPoly" type="button" class="tool-btn">Object</button>
-      </div>
-      <div class="toolbar actions center">
-        <button id="importCsvBtn" type="button" class="btn-green btn-slim">Load</button>
+        <span class="break"></span>
+        <button id="importCsvBtn" type="button" class="btn-green">Load</button>
         <input id="importCsvInput" type="file" accept=".csv,text/csv" style="display:none;" />
-        <button id="exportCsv" type="button" class="btn-slim" disabled>Save</button>
-        <button id="researchClear" class="btn-red btn-slim">Clear</button>
+        <button id="exportCsv" type="button" disabled>Save</button>
+        <button id="researchClear" class="btn-red">Clear</button>
       </div>
 
       <div class="small muted" style="margin-top:6px;">Tip: In <b>Line</b> and <b>Object</b> modes, press <b>Enter</b> to finish drawing.</div>
@@ -360,7 +330,7 @@
       </div>
     </div>
     <div class="creditbar small muted">
-      <span>© OpenStreetMap contributors · Tiles via Allmaps · Built with OpenLayers</span>
+      <span>© The Vietnam Map Archive Project · OpenStreetMap contributors · Tiles via Allmaps · Built with OpenLayers</span>
       <span class="spacer"></span>
       <button id="barShowBtn" class="tab-btn" title="Show settings" style="display:none;">Show</button>
     </div>
@@ -665,16 +635,18 @@
       if (btnHide) btnHide.addEventListener('click', collapseBar);
       if (btnShow) btnShow.addEventListener('click', expandBar);
 
-      // Apply saved collapsed state on load
-      if (localStorage.getItem('barCollapsed') === '1') {
-        bar.classList.add('collapsed');
-        bar.style.height = '';
-        btnShow.style.display = '';
-      } else {
-        // ensure saved height is restored if not already by resizer init
-        // (safe to call; it will no-op if inline height already set)
+      // Always start expanded on open (ignore previously saved collapsed state)
+      localStorage.removeItem('barCollapsed');
+      bar.classList.remove('collapsed');
+      btnShow.style.display = 'none';
+      // restore saved height (or default CSS var)
+      expandToSaved();
+      // iOS Safari can restore layout after bfcache; re-apply on pageshow
+      window.addEventListener('pageshow', () => {
+        bar.classList.remove('collapsed');
+        btnShow.style.display = 'none';
         expandToSaved();
-      }
+      });
     })();
 
     // Basemap switching
