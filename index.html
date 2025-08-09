@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Vietnam Map Archive viewer</title>
+  <title>Allmaps overlay on OpenLayers</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <!-- OpenLayers CDN -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.5.2/ol.css">
@@ -30,6 +30,19 @@
     label { font-size: 12px; color: #333; }
     select, input[type="text"], button {
       font-size: 14px; padding: 8px 10px; border-radius: 8px; border: 1px solid #ccc; outline: none;
+    }
+    /* Prevent mobile (iOS/Android) zoom on input focus by keeping form controls >=16px */
+    @media (hover:none) and (pointer:coarse) {
+      input[type="text"],
+      input[type="search"],
+      input[type="email"],
+      input[type="tel"],
+      input[type="number"],
+      input[type="password"],
+      textarea,
+      select {
+        font-size: 16px;
+      }
     }
     button { cursor: pointer; background: #111827; color: #fff; border: none; }
     button:disabled { opacity: 0.5; cursor: default; }
