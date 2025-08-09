@@ -294,6 +294,7 @@
         <button id="loadBtn" class="btn-green btn-lg">Load</button>
         <button id="metaBtn" class="btn-lg" title="Show metadata" disabled>Metadata</button>
       </div>
+      <div id="status" class="small muted" aria-live="polite"></div>
     </div>
 
     <div id="panelResearch" class="tab-panel">
@@ -1514,8 +1515,10 @@
     // Load Allmaps overlay by ID
     async function loadAllmaps(id) {
       if (!id) return;
-      statusEl.textContent = 'Loading tiles and footprint...';
-      statusEl.className = 'small muted';
+      if (statusEl) {
+        statusEl.textContent = 'Loading tiles and footprint...';
+        statusEl.className = 'small muted';
+      }
       if (metaBtn) metaBtn.disabled = true;
       if (metaSummary) metaSummary.textContent = '–';
 
@@ -1561,10 +1564,10 @@
         renderMetadataSummary(gj, feats, extent3857);
         if (metaBtn) metaBtn.disabled = false;
         overlayLayer.changed();
-        statusEl.innerHTML = ``;
+        if (statusEl) statusEl.innerHTML = '';
       } catch (err) {
         console.error(err);
-        statusEl.innerHTML = ``;
+        if (statusEl) statusEl.innerHTML = '';
         // Clear footprint extent limit so tiles can still show if metadata failed
         overlayLayer.setExtent(undefined);
         if (metaSummary) metaSummary.textContent = '';
