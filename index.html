@@ -55,8 +55,8 @@
       height: var(--barH, var(--tabH)); max-height: 90vh; overflow: hidden;
     }
     /* drag handle to resize bottom bar */
-    .bar-resizer { flex: 0 0 auto; height: 12px; cursor: ns-resize; display: flex; align-items: center; justify-content: center; }
-    .bar-resizer .grip { width: 42px; height: 4px; border-radius: 999px; background: #d1d5db; }
+    .bar-resizer { flex: 0 0 auto; height: 16px; cursor: ns-resize; display: flex; align-items: center; justify-content: center; touch-action: none; }
+    .bar-resizer .grip { width: 56px; height: 5px; border-radius: 999px; background: #d1d5db; }
     .bar-resizer:hover .grip { background: #9ca3af; }
     .bottombar .lbl { font-size: 12px; color: #333; margin-right: 6px; }
     .bottombar .spacer { flex: 1; }
@@ -132,6 +132,9 @@
       /* Keep controls compact; make overlay input the same visual width as basemap */
       .control-grid #basemap,
       .control-grid #allmapsId { width: min(70vw, 260px); }
+      /* Bigger resizer target on mobile */
+      .bar-resizer { height: 28px; }
+      .bar-resizer .grip { width: 72px; height: 6px; }
     }
     .tab-panel { display:none; width:100%; gap:10px; align-items:stretch; flex-direction:column; flex:1 1 auto; min-height:0; overflow:auto; }
     .tab-panel.active { display:flex; }
