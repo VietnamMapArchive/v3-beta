@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>VMA Map Viewer</title>
+  <title>Allmaps overlay on OpenLayers</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <!-- OpenLayers CDN -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.5.2/ol.css">
@@ -770,19 +770,54 @@
       unclip();
       preKey = overlayLayer.on('prerender', function(e) {
         const ctx = e.context; if (!ctx) return;
-        const pr = e.frameState.pixelRatio;
-        const size = e.frameState.size; // CSS px
-        const W = ctx.canvas.width, H = ctx.canvas.height;
-        ctx.save(); ctx.beginPath();
-        if (orientation === 'x') {
-          const x = Math.max(0, Math.min(size[0]*sideRatio, size[0])) * pr;
-          // overlay on RIGHT
-          ctx.rect(x, 0, W - x, H);
-        } else {
-          const y = Math.max(0, Math.min(size[1]*sideRatio, size[1])) * pr;
-          // overlay on BOTTOM
-          ctx.rect(0, y, W, H - y);
+        const pr = e.frameState.pixelRatio || 1;
+        const size = e.frameState.size; // [w,h] in CSS px
+        const W = ctx.canvas.width, H = ctx.canvas.height; // device px
+        const cx = (size[0] / 2) * pr;
+        const cy = (size[1] / 2) * pr;
+        const rot = (e.frameState.viewState && e.frameState.viewState.rotation) || e.frameState.rotation || 0;
+
+        // Unit vectors of the rotated frame
+        const cos = Math.cos(rot), sin = Math.sin(rot);
+        const u = [cos, sin];            // "+X" axis in rotated frame
+        const v = [-sin, cos];           // "+Y" axis in rotated frame
+
+        // Offset from center along the split axis (device px)
+        const offX = (size[0] * (sideRatio - 0.5)) * pr; // for vertical split baseline
+        const offY = (size[1] * (sideRatio - 0.5)) * pr; // for horizontal split baseline
+
+        // Big extents to cover the canvas
+        const K = Math.hypot(W, H);
+        const K2 = K + 10 + Math.max(Math.abs(offX), Math.abs(offY));
+
+        function pt(ax, ay) {
+          // point = center + ax*u + ay*v
+          return [cx + u[0]*ax + v[0]*ay, cy + u[1]*ax + v[1]*ay];
         }
+
+        // Build a polygon for the half-plane to keep (RIGHT for 'x', BOTTOM for 'y')
+        let p1, p2, p3, p4;
+        if (orientation === 'x') {
+          // boundary line at (p-c)·u = offX; keep (p-c)·u >= offX
+          p1 = pt(offX, -K);
+          p2 = pt(offX,  K);
+          p3 = pt( K2,   K);
+          p4 = pt( K2,  -K);
+        } else {
+          // boundary line at (p-c)·v = offY; keep (p-c)·v >= offY
+          p1 = pt(-K,  offY);
+          p2 = pt( K,  offY);
+          p3 = pt( K,  K2);
+          p4 = pt(-K,  K2);
+        }
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(p1[0], p1[1]);
+        ctx.lineTo(p2[0], p2[1]);
+        ctx.lineTo(p3[0], p3[1]);
+        ctx.lineTo(p4[0], p4[1]);
+        ctx.closePath();
         ctx.clip();
       });
       postKey = overlayLayer.on('postrender', e => { const ctx=e.context; if (!ctx) return; ctx.restore(); });
