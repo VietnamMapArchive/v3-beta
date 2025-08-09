@@ -1,0 +1,967 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Allmaps overlay on OpenLayers</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- OpenLayers CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.5.2/ol.css">
+  <script src="https://cdn.jsdelivr.net/npm/ol@v7.5.2/dist/ol.js"></script>
+  <style>
+    html, body { height: 100%; margin: 0; }
+    #map { position: relative; width: 100%; height: 100%; }
+    .panel {
+      position: absolute; top: 10px; left: 10px; z-index: 1000;
+      background: rgba(255,255,255,0.95); padding: 12px 14px; border-radius: 12px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.15); font-family: system-ui, Arial, sans-serif; min-width: 300px;
+    }
+    .row { display: grid; grid-template-columns: 1fr; gap: 8px; margin-bottom: 10px; }
+    label { font-size: 12px; color: #333; }
+    select, input[type="text"], button {
+      font-size: 14px; padding: 8px 10px; border-radius: 8px; border: 1px solid #ccc; outline: none;
+    }
+    button { cursor: pointer; background: #111827; color: #fff; border: none; }
+    button:disabled { opacity: 0.5; cursor: default; }
+    .small { font-size: 12px; color: #444; }
+    .inline { display: flex; gap: 8px; align-items: center; }
+    .w-100 { width: 100%; }
+    .muted { color: #666; }
+    .pill {
+      display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; background: #f3f4f6; color: #111827;
+    }
+    .error { color: #b91c1c; }
+    .ok { color: #065f46; }
+    .link { color: #2563eb; text-decoration: none; }
+    .kvgrid { display: grid; grid-template-columns: max-content 1fr; gap: 6px 12px; align-items: start; }
+    .kv-key { font-weight: 600; color: #334155; white-space: nowrap; }
+    .kv-val { color: #111827; overflow-wrap: anywhere; }
+    .badge { display:inline-block; padding:1px 6px; border-radius:999px; background:#eef2ff; color:#3730a3; font-size:11px; }
+    .bottombar { position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 1000; background: rgba(255,255,255,0.95); border-radius: 12px; padding: 8px 10px; box-shadow: 0 6px 18px rgba(0,0,0,0.15); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .bottombar .lbl { font-size: 12px; color: #333; margin-right: 6px; }
+    .bottombar .spacer { flex: 1; }
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: none; align-items: center; justify-content: center; z-index: 2000; }
+    .modal.show { display: flex; }
+    .modal .content { background: #fff; max-width: 720px; width: min(720px, 92vw); max-height: 80vh; overflow: auto; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); padding: 16px 18px; }
+    .modal .hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .modal .close { background: transparent; border: none; font-size: 20px; line-height: 1; cursor: pointer; padding: 6px; }
+
+    /* split guides + spyglass */
+    .divider-v { position: absolute; top: 0; bottom: 0; width: 0; border-left: 2px dashed rgba(0,0,0,0.45); pointer-events: none; z-index: 999; display: none; }
+    .divider-h { position: absolute; left: 0; right: 0; height: 0; border-top: 2px dashed rgba(0,0,0,0.45); pointer-events: none; z-index: 999; display: none; }
+    .lens { position: absolute; pointer-events: none; border: 2px solid rgba(0,0,0,0.5); border-radius: 9999px; box-shadow: 0 0 0 2px rgba(255,255,255,0.85) inset; z-index: 999; display: none; cursor: default; }
+    .lens:active { cursor: default; }
+
+    /* drag handles */
+    .handle, .lens-handle {
+      position: absolute; width: 16px; height: 16px; border-radius: 9999px;
+      background: #fff; border: 2px solid rgba(0,0,0,0.55); box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      z-index: 1000; display: none; pointer-events: auto;
+    }
+    .handle-v { cursor: ew-resize; }
+    .handle-h { cursor: ns-resize; }
+    .lens-handle { cursor: nwse-resize; }
+
+    .range { width: 160px; }
+    /* tabs */
+    .tabs { display:flex; gap:8px; margin-bottom:6px; }
+    .tab-btn { appearance:none; border:1px solid #d1d5db; background:#f8fafc; color:#111827; padding:6px 10px; border-radius:8px; font-size:13px; cursor:pointer; }
+    .tab-btn.active { background:#111827; color:#fff; border-color:#111827; }
+    .tab-panel { display:none; width:100%; gap:10px; align-items:center; flex-wrap:wrap; }
+    .tab-panel.active { display:flex; }
+    /* tool buttons (single active) */
+    .tool-btn { appearance:none; border:1px solid #d1d5db; background:#f8fafc; color:#111827; padding:6px 10px; border-radius:8px; font-size:13px; cursor:pointer; }
+    .tool-btn.active { background:#111827; color:#fff; border-color:#111827; }
+
+    /* annotation table */
+    .tbl { width: 100%; border-collapse: collapse; }
+    .tbl th, .tbl td { border: 1px solid #e5e7eb; padding: 6px 8px; font-size: 12px; }
+    .tbl th { background: #f8fafc; text-align: left; font-weight: 600; }
+    .tbl input[type="text"] { width: 100%; padding: 4px 6px; font-size: 12px; border: 1px solid #d1d5db; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <div id="map">
+    <div id="dividerX" class="divider-v"></div>
+    <div id="dividerY" class="divider-h"></div>
+
+    <div id="lens" class="lens"></div>
+    <div id="lensHandle" class="lens-handle" title="Resize lens"></div>
+
+    <div id="dividerHandleX" class="handle handle-v" title="Drag split (X)"></div>
+    <div id="dividerHandleY" class="handle handle-h" title="Drag split (Y)"></div>
+  </div>
+
+  <div class="bottombar">
+    <div class="tabs">
+      <button id="tabControl" class="tab-btn active">Control</button>
+      <button id="tabResearch" class="tab-btn">Research</button>
+    </div>
+
+    <div id="panelControl" class="tab-panel active">
+      <div class="inline">
+        <span class="lbl">Basemap</span>
+        <select id="basemap">
+          <option value="osm" selected>OpenStreetMap</option>
+          <option value="g-streets">Google Streets (see note)</option>
+          <option value="g-satellite">Google Satellite (see note)</option>
+        </select>
+      </div>
+
+      <div class="inline" style="flex:1; min-width: 260px;">
+        <span class="lbl">Image&nbsp;ID</span>
+        <input class="w-100" type="text" id="allmapsId" placeholder="e.g., 9b1b2f08a0e5b4ad..." />
+        <button id="loadBtn">Load</button>
+      </div>
+
+      <div class="inline">
+        <span class="lbl">View</span>
+        <select id="viewMode">
+          <option value="overlay" selected>Overlay</option>
+          <option value="side-x">Side-by-side X</option>
+          <option value="side-y">Side-by-side Y</option>
+          <option value="spy">Spyglass</option>
+        </select>
+      </div>
+
+      <div class="inline">
+        <span class="lbl">Opacity</span>
+        <input id="opacityRange" class="range" type="range" min="0" max="1" step="0.01" value="0.70" />
+        <span id="opLabel" class="small muted">0.70</span>
+      </div>
+
+      <button id="metaBtn" title="Show metadata" disabled>Metadata</button>
+
+      <div id="status" class="small muted" style="flex:1; min-width: 200px;">Enter an ID and click Load. You can also pass <code>?id=...</code> in the URL.</div>
+    </div>
+
+    <div id="panelResearch" class="tab-panel">
+      <div class="inline" style="gap:14px;">
+        <span class="lbl">Tool</span>
+        <button id="btnPoint" type="button" class="tool-btn">Point</button>
+        <button id="btnLine" type="button" class="tool-btn">Line</button>
+        <button id="btnPoly" type="button" class="tool-btn">Object (polygon)</button>
+        <button id="exportCsv" type="button">Export CSV</button>
+        <button id="importCsvBtn" type="button">Import CSV</button>
+        <input id="importCsvInput" type="file" accept=".csv,text/csv" style="display:none;" />
+        <button id="researchClear">Clear</button>
+      </div>
+
+      <div class="small muted" style="margin-top:6px;">Tip: In **Line** mode, press <b>Enter</b> to finish measuring.</div>
+
+      <div style="width:100%; margin-top:8px;">
+        <table id="annoTable" class="tbl">
+          <thead>
+            <tr><th>#</th><th>Type</th><th>Label</th><th>Metric</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="annoTbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="metaModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="metaTitle">
+    <div class="content">
+      <div class="hd">
+        <h3 id="metaTitle" style="margin:0;">Map metadata</h3>
+        <button id="closeMeta" class="close" aria-label="Close">×</button>
+      </div>
+      <div id="metaSummary" class="small">–</div>
+      <div class="small" style="margin-top:10px;">Footprint source: <span id="metaLinkWrap" class="muted">–</span></div>
+      <div class="small muted" style="margin-top:10px;">Attribution: © <a class="link" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors · Allmaps. Google tiles usage may require permission and a proper API.</div>
+    </div>
+  </div>
+
+  <script>
+    // --- Base layers ---
+    const osmLayer = new ol.layer.Tile({
+      source: new ol.source.OSM(),
+      visible: true,
+      properties: { 'name': 'osm', 'base': true },
+      zIndex: 0
+    });
+
+    // Google via XYZ (⚠️ check TOS; replace only if you have permission)
+    const googleStreets = new ol.layer.Tile({
+      source: new ol.source.XYZ({
+        urls: [
+          'https://mt0.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+          'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+          'https://mt2.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+          'https://mt3.google.com/vt/lyrs=m&x={x}&y={y}&z={z}'
+        ],
+        maxZoom: 22,
+        crossOrigin: 'anonymous',
+        attributions: '© Google'
+      }),
+      visible: false,
+      properties: { 'name': 'g-streets', 'base': true },
+      zIndex: 0
+    });
+
+    const googleSatellite = new ol.layer.Tile({
+      source: new ol.source.XYZ({
+        urls: [
+          'https://mt0.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+          'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+          'https://mt2.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+          'https://mt3.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
+        ],
+        maxZoom: 22,
+        crossOrigin: 'anonymous',
+        attributions: '© Google'
+      }),
+      visible: false,
+      properties: { 'name': 'g-satellite', 'base': true },
+      zIndex: 0
+    });
+
+    // Historical overlay (initially empty)
+    const overlayLayer = new ol.layer.Tile({
+      source: new ol.source.XYZ({ url: '' }), // set when ID is loaded
+      opacity: 0.70,
+      visible: true,
+      zIndex: 10,
+      properties: { 'name': 'allmaps-overlay' }
+    });
+
+    // Optional: footprint outline layer (vector)
+    const footprintSource = new ol.source.Vector();
+    const footprintLayer = new ol.layer.Vector({
+      source: footprintSource,
+      style: new ol.style.Style({
+        stroke: new ol.style.Stroke({ color: '#ef4444', width: 2 }),
+        fill: new ol.style.Fill({ color: 'rgba(239,68,68,0.08)' })
+      }),
+      visible: false,
+      zIndex: 15,
+      properties: { 'name': 'footprint' }
+    });
+
+    // Research annotations layer (points/lines/polygons) with labels
+    const researchSource = new ol.source.Vector();
+    const researchLayer = new ol.layer.Vector({
+      source: researchSource,
+      zIndex: 20,
+      style: (feature, resolution) => {
+        const geom = feature.getGeometry();
+        const type = geom.getType();
+        const label = feature.get('label');
+        const baseStroke = new ol.style.Stroke({ color: '#2563eb', width: 2 });
+        const baseFill = new ol.style.Fill({ color: 'rgba(37,99,235,0.15)' });
+        const styles = [];
+        if (type === 'Point') {
+          styles.push(new ol.style.Style({
+            image: new ol.style.Circle({ radius: 5, fill: new ol.style.Fill({ color: '#2563eb' }), stroke: new ol.style.Stroke({ color: '#ffffff', width: 2 }) })
+          }));
+          if (label) {
+            styles.push(new ol.style.Style({
+              text: new ol.style.Text({
+                text: String(label), font: '12px system-ui, Arial',
+                fill: new ol.style.Fill({ color: '#111827' }),
+                stroke: new ol.style.Stroke({ color: 'rgba(255,255,255,0.9)', width: 3 }),
+                offsetY: -12, overflow: true
+              })
+            }));
+          }
+        } else if (type === 'LineString' || type === 'MultiLineString') {
+          styles.push(new ol.style.Style({ stroke: baseStroke }));
+        } else { // Polygon / MultiPolygon
+          styles.push(new ol.style.Style({ stroke: baseStroke, fill: baseFill }));
+          if (label) {
+            styles.push(new ol.style.Style({
+              geometry: (f) => f.getGeometry().getInteriorPoint(),
+              text: new ol.style.Text({
+                text: String(label), font: '12px system-ui, Arial',
+                fill: new ol.style.Fill({ color: '#111827' }),
+                stroke: new ol.style.Stroke({ color: 'rgba(255,255,255,0.9)', width: 3 }),
+                overflow: true
+              })
+            }));
+          }
+        }
+        return styles;
+      },
+      properties: { 'name': 'research' }
+    });
+
+    // Map
+    const map = new ol.Map({
+      target: 'map',
+      layers: [osmLayer, googleStreets, googleSatellite, overlayLayer, footprintLayer, researchLayer],
+      view: new ol.View({
+        center: ol.proj.fromLonLat([106.70098, 10.77653]), // default center (HCMC)
+        zoom: 12,
+        enableRotation: true,
+        constrainRotation: false
+      })
+    });
+
+    // Add ScaleLine control explicitly (Attribution is included by default)
+    map.addControl(new ol.control.ScaleLine());
+    // Add a visible rotate control and rotation interactions
+    map.addControl(new ol.control.Rotate({ autoHide: false }));
+    map.addInteraction(new ol.interaction.DragRotate({
+      condition: ol.events.condition.platformModifierKeyOnly
+    }));
+    map.addInteraction(new ol.interaction.PinchRotate());
+
+    // UI elements
+    const basemapSel = document.getElementById('basemap');
+    const idInput = document.getElementById('allmapsId');
+    const loadBtn = document.getElementById('loadBtn');
+    const statusEl = document.getElementById('status');
+    const metaLinkWrap = document.getElementById('metaLinkWrap');
+    const metaSummary = document.getElementById('metaSummary');
+    const metaBtn = document.getElementById('metaBtn');
+    const metaModal = document.getElementById('metaModal');
+    const closeMeta = document.getElementById('closeMeta');
+
+    // Tabs
+    const tabControl = document.getElementById('tabControl');
+    const tabResearch = document.getElementById('tabResearch');
+    const panelControl = document.getElementById('panelControl');
+    const panelResearch = document.getElementById('panelResearch');
+
+    // Research UI (single tool + table)
+    const btnPoint = document.getElementById('btnPoint');
+    const btnLine  = document.getElementById('btnLine');
+    const btnPoly  = document.getElementById('btnPoly');
+    const researchClear = document.getElementById('researchClear');
+    const annoTbody = document.getElementById('annoTbody');
+    const exportCsvBtn = document.getElementById('exportCsv');
+    const importCsvBtn = document.getElementById('importCsvBtn');
+    const importCsvInput = document.getElementById('importCsvInput');
+
+    const viewModeSel = document.getElementById('viewMode');
+    const opacityRange = document.getElementById('opacityRange');
+    const opLabel = document.getElementById('opLabel');
+
+    const dividerXEl = document.getElementById('dividerX');
+    const dividerYEl = document.getElementById('dividerY');
+    const dividerHandleX = document.getElementById('dividerHandleX');
+    const dividerHandleY = document.getElementById('dividerHandleY');
+
+    const lensEl = document.getElementById('lens');
+    const lensHandle = document.getElementById('lensHandle');
+
+    // Basemap switching
+    function setBasemap(name) {
+      [osmLayer, googleStreets, googleSatellite].forEach(l => l.setVisible(false));
+      if (name === 'osm') osmLayer.setVisible(true);
+      else if (name === 'g-streets') googleStreets.setVisible(true);
+      else if (name === 'g-satellite') googleSatellite.setVisible(true);
+    }
+    basemapSel.addEventListener('change', () => setBasemap(basemapSel.value));
+
+    // Modal open/close handlers
+    function openMeta() { if (metaBtn.disabled) return; metaModal.classList.add('show'); }
+    function closeMetaFn() { metaModal.classList.remove('show'); }
+    if (metaBtn) metaBtn.addEventListener('click', openMeta);
+    if (closeMeta) closeMeta.addEventListener('click', closeMetaFn);
+    if (metaModal) metaModal.addEventListener('click', (e) => { if (e.target === metaModal) closeMetaFn(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMetaFn(); });
+
+    // Tabs behavior
+    function showControlTab(){
+      tabControl.classList.add('active'); tabResearch.classList.remove('active');
+      panelControl.classList.add('active'); panelResearch.classList.remove('active');
+      if (typeof setActiveTool === 'function') setActiveTool('none');
+    }
+    function showResearchTab(){
+      tabResearch.classList.add('active'); tabControl.classList.remove('active');
+      panelResearch.classList.add('active'); panelControl.classList.remove('active');
+    }
+    if (tabControl) tabControl.addEventListener('click', showControlTab);
+    if (tabResearch) tabResearch.addEventListener('click', showResearchTab);
+
+
+    // --- View modes: overlay, side-x (vertical split), side-y (horizontal split), spyglass ---
+    let currentMode = 'overlay';
+    let sideRatio = 0.5;       // 0..1
+    let lensRadius = 150;      // px
+    let preKey = null, postKey = null;
+    let dragging = { sideX:false, sideY:false, lensR:false };
+
+    function unclip() {
+      if (preKey) { ol.Observable.unByKey(preKey); preKey = null; }
+      if (postKey) { ol.Observable.unByKey(postKey); postKey = null; }
+      overlayLayer.changed();
+    }
+
+    function attachSideClip(orientation) {
+      unclip();
+      preKey = overlayLayer.on('prerender', function(e) {
+        const ctx = e.context; if (!ctx) return;
+        const pr = e.frameState.pixelRatio;
+        const size = e.frameState.size; // CSS px
+        const W = ctx.canvas.width, H = ctx.canvas.height;
+        ctx.save(); ctx.beginPath();
+        if (orientation === 'x') {
+          const x = Math.max(0, Math.min(size[0]*sideRatio, size[0])) * pr;
+          // overlay on RIGHT
+          ctx.rect(x, 0, W - x, H);
+        } else {
+          const y = Math.max(0, Math.min(size[1]*sideRatio, size[1])) * pr;
+          // overlay on BOTTOM
+          ctx.rect(0, y, W, H - y);
+        }
+        ctx.clip();
+      });
+      postKey = overlayLayer.on('postrender', e => { const ctx=e.context; if (!ctx) return; ctx.restore(); });
+      overlayLayer.changed();
+    }
+
+    function attachSpyClip() {
+      unclip();
+      preKey = overlayLayer.on('prerender', function(e) {
+        const ctx = e.context; if (!ctx) return;
+        const pr = e.frameState.pixelRatio;
+        const size = e.frameState.size;
+        const cx = (size[0]/2) * pr;
+        const cy = (size[1]/2) * pr;
+        const r  = Math.max(10, lensRadius) * pr;
+        ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.clip();
+      });
+      postKey = overlayLayer.on('postrender', e => { const ctx=e.context; if (!ctx) return; ctx.restore(); });
+      overlayLayer.changed();
+    }
+
+    function mapSize() { return map.getSize() || [0,0]; }
+    function updateDividersAndHandles() {
+      const [w,h] = mapSize();
+      if (dividerXEl) { dividerXEl.style.display = (currentMode==='side-x')?'block':'none'; dividerXEl.style.left = (sideRatio*100)+'%'; }
+      if (dividerYEl) { dividerYEl.style.display = (currentMode==='side-y')?'block':'none'; dividerYEl.style.top  = (sideRatio*100)+'%'; }
+
+      // position divider handles
+      if (dividerHandleX) {
+        dividerHandleX.style.display = (currentMode==='side-x')?'block':'none';
+        dividerHandleX.style.left = (sideRatio*w - 8) + 'px';
+        dividerHandleX.style.top  = (h/2 - 8) + 'px';
+      }
+      if (dividerHandleY) {
+        dividerHandleY.style.display = (currentMode==='side-y')?'block':'none';
+        dividerHandleY.style.left = (w/2 - 8) + 'px';
+        dividerHandleY.style.top  = (sideRatio*h - 8) + 'px';
+      }
+    }
+
+    function updateLensAndHandle() {
+      const [w,h] = mapSize();
+      const cx = w/2;
+      const cy = h/2;
+      const d = Math.max(20, lensRadius*2);
+      if (lensEl) {
+        lensEl.style.display = (currentMode==='spy')?'block':'none';
+        lensEl.style.width=d+'px'; lensEl.style.height=d+'px';
+        lensEl.style.left=(cx - lensRadius)+'px'; lensEl.style.top=(cy - lensRadius)+'px';
+      }
+      if (lensHandle) {
+        lensHandle.style.display = (currentMode==='spy')?'block':'none';
+        lensHandle.style.left=(cx + lensRadius - 8)+'px';
+        lensHandle.style.top =(cy - 8)+'px';
+      }
+    }
+
+    function setMode(mode) {
+      stopDrag();
+      currentMode = mode;
+
+      if (mode === 'overlay') {
+        unclip();
+        overlayLayer.setOpacity(parseFloat(opacityRange.value || '0.70'));
+        if (lensEl) lensEl.style.display='none';
+        if (lensHandle) lensHandle.style.display='none';
+        if (dividerXEl) dividerXEl.style.display='none';
+        if (dividerYEl) dividerYEl.style.display='none';
+        if (dividerHandleX) dividerHandleX.style.display='none';
+        if (dividerHandleY) dividerHandleY.style.display='none';
+      }
+      if (mode === 'side-x') {
+        overlayLayer.setOpacity(parseFloat(opacityRange.value || '1'));
+        if (lensEl) lensEl.style.display='none';
+        if (lensHandle) lensHandle.style.display='none';
+        attachSideClip('x'); updateDividersAndHandles();
+      }
+      if (mode === 'side-y') {
+        overlayLayer.setOpacity(parseFloat(opacityRange.value || '1'));
+        if (lensEl) lensEl.style.display='none';
+        if (lensHandle) lensHandle.style.display='none';
+        attachSideClip('y'); updateDividersAndHandles();
+      }
+      if (mode === 'spy') {
+        if (dividerXEl) dividerXEl.style.display='none';
+        if (dividerYEl) dividerYEl.style.display='none';
+        if (dividerHandleX) dividerHandleX.style.display='none';
+        if (dividerHandleY) dividerHandleY.style.display='none';
+        overlayLayer.setOpacity(parseFloat(opacityRange.value || '1'));
+        attachSpyClip(); updateLensAndHandle();
+      }
+    }
+
+    // mode selector
+    if (viewModeSel) viewModeSel.addEventListener('change', () => setMode(viewModeSel.value));
+
+    // opacity
+    if (opacityRange) opacityRange.addEventListener('input', () => {
+      const v = parseFloat(opacityRange.value); opLabel.textContent = v.toFixed(2); overlayLayer.setOpacity(v);
+      overlayLayer.changed();
+    });
+
+    // --- Research tools: single active tool (point | line | polygon) + annotation table ---
+    let draw = null;
+    let keyDownFinishLine = null;
+    let keyDownCancel = null;
+    let fidCounter = 1;
+
+    function formatLen(m){ return (m>1000)? (m/1000).toFixed(2)+' km' : m.toFixed(1)+' m'; }
+    function formatArea(a){ return (a>=1e6)? (a/1e6).toFixed(2)+' km²' : a.toFixed(1)+' m²'; }
+
+    function getOrAssignId(feat){ if (!feat.getId()){ feat.setId('a'+(fidCounter++)); } return feat.getId(); }
+
+    function metricForFeature(feat){
+      const g = feat.getGeometry(); const t = g.getType();
+      try{
+        if (t==='Point'){
+          const lonlat = ol.proj.toLonLat(g.getCoordinates());
+          return lonlat[0].toFixed(5)+', '+lonlat[1].toFixed(5);
+        } else if (t==='LineString'){
+          const len = ol.sphere.getLength(g, { projection: 'EPSG:3857' });
+          return formatLen(len);
+        } else if (t==='Polygon'){
+          const area = ol.sphere.getArea(g, { projection: 'EPSG:3857' });
+          return formatArea(area);
+        }
+      } catch(_){ }
+      return '—';
+    }
+
+    function refreshAnnoTable(){
+      if (!annoTbody) return;
+      const feats = researchSource.getFeatures();
+      let html = '';
+      for (const f of feats){
+        const id = getOrAssignId(f);
+        const t = f.getGeometry().getType();
+        const label = f.get('label') || '';
+        const metric = metricForFeature(f);
+        html += `<tr data-id="${id}">`
+              + `<td>${id}</td>`
+              + `<td>${t.replace('LineString','Line')}</td>`
+              + `<td><input type="text" class="anno-label" value="${label.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}" /></td>`
+              + `<td>${metric}</td>`
+              + `<td><button class="anno-zoom">Zoom</button> <button class="anno-del">Delete</button></td>`
+              + `</tr>`;
+      }
+      annoTbody.innerHTML = html || '<tr><td colspan="5" class="muted">No annotations yet.</td></tr>';
+
+      // wire inputs and buttons
+      annoTbody.querySelectorAll('tr[data-id]').forEach(row => {
+        const id = row.getAttribute('data-id');
+        const f = researchSource.getFeatureById(id);
+        if (!f) return;
+        const input = row.querySelector('input.anno-label');
+        if (input) input.addEventListener('input', () => { f.set('label', input.value); researchLayer.changed(); });
+        const btnZ = row.querySelector('button.anno-zoom');
+        if (btnZ) btnZ.addEventListener('click', () => {
+          const ext = f.getGeometry().getExtent();
+          map.getView().fit(ext, { padding:[80,20,20,20], duration: 300, maxZoom: 18 });
+        });
+        const btnD = row.querySelector('button.anno-del');
+        if (btnD) btnD.addEventListener('click', () => { researchSource.removeFeature(f); });
+      });
+    }
+
+    function cleanupTool(){
+      if (draw) { map.removeInteraction(draw); draw = null; }
+      if (keyDownFinishLine) { document.removeEventListener('keydown', keyDownFinishLine); keyDownFinishLine = null; }
+      if (keyDownCancel) { document.removeEventListener('keydown', keyDownCancel); keyDownCancel = null; }
+      [btnPoint, btnLine, btnPoly].forEach(b => b && b.classList.remove('active'));
+    }
+
+    function setActiveTool(mode){
+      cleanupTool();
+      if (!mode || mode==='none') return;
+
+      let type = null;
+      if (mode==='point') { type='Point'; if (btnPoint) btnPoint.classList.add('active'); }
+      else if (mode==='line') { type='LineString'; if (btnLine) btnLine.classList.add('active'); }
+      else if (mode==='polygon') { type='Polygon'; if (btnPoly) btnPoly.classList.add('active'); }
+      if (!type) return;
+
+      draw = new ol.interaction.Draw({ source: researchSource, type, stopClick:true });
+      map.addInteraction(draw);
+
+      // Enter finishes lines; Esc cancels current sketch (lines & polygons)
+      if (mode==='line') {
+        keyDownFinishLine = (e) => { if (e.key === 'Enter') { e.preventDefault(); try{ draw.finishDrawing(); }catch(_){} } };
+        document.addEventListener('keydown', keyDownFinishLine);
+      }
+      if (mode==='line' || mode==='polygon') {
+        keyDownCancel = (e) => { if (e.key === 'Escape') { e.preventDefault(); try{ draw.abortDrawing(); }catch(_){} } };
+        document.addEventListener('keydown', keyDownCancel);
+      }
+
+      draw.on('drawend', (e) => { getOrAssignId(e.feature); refreshAnnoTable(); });
+    }
+
+    // Hook tool buttons (toggle off if clicking the active one)
+    if (btnPoint) btnPoint.addEventListener('click', () => setActiveTool(btnPoint.classList.contains('active') ? 'none' : 'point'));
+    if (btnLine)  btnLine .addEventListener('click', () => setActiveTool(btnLine .classList.contains('active') ? 'none' : 'line'));
+    if (btnPoly)  btnPoly .addEventListener('click', () => setActiveTool(btnPoly .classList.contains('active') ? 'none' : 'polygon'));
+
+    // table sync
+    researchSource.on('addfeature', refreshAnnoTable);
+    researchSource.on('removefeature', refreshAnnoTable);
+
+    if (researchClear) researchClear.addEventListener('click', () => { researchSource.clear(); refreshAnnoTable(); });
+
+    // initial state: no tool active
+    setActiveTool('none');
+    refreshAnnoTable();
+
+
+    // --- CSV export / import for annotations ---
+    const wktFormat = new ol.format.WKT();
+
+    function csvEscape(val){
+      if (val == null) return '';
+      const s = String(val);
+      if (/[,"\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+      return s;
+    }
+
+    function featureToCsvRow(f){
+      const id = f.getId() || '';
+      const geom = f.getGeometry();
+      const type = geom.getType();
+      const label = f.get('label') || '';
+      const wkt = wktFormat.writeGeometry(geom); // EPSG:3857
+      return [id, type, label, wkt].map(csvEscape).join(',');
+    }
+
+    function downloadCsv(){
+      const header = 'id,type,label,wkt';
+      const rows = researchSource.getFeatures().map(featureToCsvRow);
+      const csv = [header].concat(rows).join('\r\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const ts = new Date().toISOString().replace(/[:.]/g,'-');
+      a.download = `annotations-${ts}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function parseCsvLine(line){
+      const out = []; let cur = ''; let i=0; const n=line.length; let inQ=false;
+      while(i<n){
+        const ch=line[i++];
+        if (inQ){
+          if (ch==='"'){
+            if (i<n && line[i]==='"'){ cur+='"'; i++; } else { inQ=false; }
+          } else { cur+=ch; }
+        } else {
+          if (ch===','){ out.push(cur); cur=''; }
+          else if (ch==='"'){ inQ=true; }
+          else { cur+=ch; }
+        }
+      }
+      out.push(cur);
+      return out;
+    }
+
+    function importCsv(text){
+      const lines = text.split(/\r?\n/).filter(l => l.trim().length>0);
+      if (!lines.length) return 0;
+      let start = 0;
+      const head = parseCsvLine(lines[0]).map(h => h.trim().toLowerCase());
+      if (head.join(',') === 'id,type,label,wkt') start = 1;
+      let count = 0;
+      for (let i=start;i<lines.length;i++){
+        const cols = parseCsvLine(lines[i]);
+        if (cols.length < 4) continue;
+        const [idRaw, type, label, wkt] = cols;
+        let geom;
+        try { geom = wktFormat.readGeometry(wkt); } catch(_) { continue; }
+        const feat = new ol.Feature({ geometry: geom });
+        if (label) feat.set('label', label);
+        let id = idRaw && idRaw.trim() ? idRaw.trim() : null;
+        if (id && researchSource.getFeatureById(id)) {
+          // make unique by suffixing a counter
+          let k=1; let nid = id + '-' + k;
+          while (researchSource.getFeatureById(nid)) { k++; nid = id + '-' + k; }
+          id = nid;
+        }
+        if (id) feat.setId(id); else getOrAssignId(feat);
+        researchSource.addFeature(feat);
+        count++;
+      }
+      return count;
+    }
+
+    if (exportCsvBtn) exportCsvBtn.addEventListener('click', downloadCsv);
+    if (importCsvBtn && importCsvInput) {
+      importCsvBtn.addEventListener('click', () => importCsvInput.click());
+      importCsvInput.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          const text = String(reader.result || '');
+          const added = importCsv(text);
+          refreshAnnoTable();
+          // reset input to allow re-uploading the same file name
+          importCsvInput.value = '';
+        };
+        reader.readAsText(file);
+      });
+    }
+
+
+    // --- Dragging (pointer events) ---
+    const mapEl = document.getElementById('map');
+    function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+    function onMove(e) {
+      if (!mapEl) return;
+      const rect = mapEl.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const [w,h] = mapSize();
+
+      if (dragging.lensR) {
+        const cx = w/2, cy = h/2;
+        const dx = x - cx, dy = y - cy;
+        lensRadius = clamp(Math.sqrt(dx*dx + dy*dy), 20, Math.min(w,h)/2);
+        updateLensAndHandle(); overlayLayer.changed(); return;
+      }
+      if (dragging.sideX) {
+        sideRatio = clamp(x / w, 0.1, 0.9);
+        updateDividersAndHandles(); overlayLayer.changed(); return;
+      }
+      if (dragging.sideY) {
+        sideRatio = clamp(y / h, 0.1, 0.9);
+        updateDividersAndHandles(); overlayLayer.changed(); return;
+      }
+    }
+    function stopDrag(){ dragging = { sideX:false, sideY:false, lensR:false }; }
+
+    if (dividerHandleX) dividerHandleX.addEventListener('pointerdown', (e)=>{ if (currentMode!=='side-x') return; dragging.sideX=true; dividerHandleX.setPointerCapture(e.pointerId); e.preventDefault(); });
+    if (dividerHandleY) dividerHandleY.addEventListener('pointerdown', (e)=>{ if (currentMode!=='side-y') return; dragging.sideY=true; dividerHandleY.setPointerCapture(e.pointerId); e.preventDefault(); });
+    if (lensHandle) lensHandle.addEventListener('pointerdown', (e)=>{ if (currentMode!=='spy') return; dragging.lensR=true; lensHandle.setPointerCapture(e.pointerId); e.preventDefault(); });
+
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', stopDrag);
+    window.addEventListener('pointercancel', stopDrag);
+
+    // keep helpers aligned on map changes + resize
+    map.getView().on('change:center', () => { if (currentMode==='spy') updateLensAndHandle(); if (currentMode==='side-x'||currentMode==='side-y') updateDividersAndHandles(); });
+    map.getView().on('change:resolution', () => { if (currentMode==='spy') updateLensAndHandle(); if (currentMode==='side-x'||currentMode==='side-y') updateDividersAndHandles(); });
+    window.addEventListener('resize', () => { updateLensAndHandle(); updateDividersAndHandles(); });
+
+    // init
+    setMode('overlay');
+
+
+    // --- Friendly metadata summary (dynamic) ---
+    const esc = (s) => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+    const fmtNum = (n) => (typeof n === 'number' ? n.toLocaleString() : n);
+    const fmtArea = (a) => {
+      if (typeof a !== 'number') return a;
+      if (a >= 1_000_000) return `${(a/1_000_000).toLocaleString(undefined,{maximumFractionDigits:2})} km²`;
+      return `${a.toLocaleString(undefined,{maximumFractionDigits:0})} m²`;
+    };
+    const fmtDate = (d) => {
+      try { return new Date(d).toLocaleString(); } catch { return d; }
+    };
+    const short = (s, len=48) => {
+      if (!s) return s;
+      const str = String(s);
+      return str.length > len ? esc(str.slice(0, len-1)) + '…' : esc(str);
+    };
+
+    function extractLabel(obj) {
+      if (!obj) return undefined;
+      // Common IIIF label patterns
+      const lbl = obj?.label;
+      if (typeof lbl === 'string') return lbl;
+      if (lbl && typeof lbl === 'object') {
+        if (Array.isArray(lbl.none) && lbl.none[0]) return lbl.none[0];
+        if (Array.isArray(lbl.en) && lbl.en[0]) return lbl.en[0];
+      }
+      // Try nested partOf label
+      const part = obj?.partOf;
+      if (Array.isArray(part) && part[0]) return extractLabel(part[0]) || extractLabel(part[0]?.partOf?.[0]);
+      return undefined;
+    }
+
+    function buildSummaryHTML(props, feature, extent4326) {
+      if (!props) return '–';
+      const rows = [];
+
+      const title = extractLabel(props.resource) || extractLabel(props) || undefined;
+      if (title) rows.push(['Title', title]);
+
+      if (props.type) rows.push(['Type', props.type]);
+      if (props.created) rows.push(['Created', fmtDate(props.created)]);
+      if (props.modified) rows.push(['Modified', fmtDate(props.modified)]);
+
+      const res = props.resource || {};
+      if (res.id) rows.push(['Resource', `<a class="link" href="${esc(res.id)}" target="_blank" rel="noreferrer">${short(res.id)}</a>`]);
+      if (typeof res.width === 'number' || typeof res.height === 'number') {
+        rows.push(['Dimensions', `${fmtNum(res.width)} × ${fmtNum(res.height)} px`]);
+      }
+      // IIIF Canvas/Manifest
+      const canvas = Array.isArray(res.partOf) && res.partOf[0] ? res.partOf[0] : undefined;
+      if (canvas?.id) rows.push(['Canvas', `<a class="link" href="${esc(canvas.id)}" target="_blank" rel="noreferrer">${short(canvas.id)}</a>`]);
+      const manifest = canvas?.partOf && Array.isArray(canvas.partOf) ? canvas.partOf[0] : undefined;
+      if (manifest?.id) rows.push(['Manifest', `<a class="link" href="${esc(manifest.id)}" target="_blank" rel="noreferrer">${short(manifest.id)}</a>`]);
+
+      // Transformation
+      const tr = props.transformation;
+      if (tr?.type) {
+        const order = tr?.options?.order != null ? ` (order ${tr.options.order})` : '';
+        rows.push(['Transformation', `${esc(tr.type)}${order}`]);
+      }
+
+      // Allmaps internal
+      const am = props._allmaps || {};
+      if (am.image?.id) rows.push(['Allmaps Image', `<a class="link" href="${esc(am.image.id)}" target="_blank" rel="noreferrer">${short(am.image.id)}</a>`]);
+      if (typeof am.scale === 'number') rows.push(['Scale', fmtNum(am.scale)]);
+      if (typeof am.area === 'number') rows.push(['Area', fmtArea(am.area)]);
+
+      // GCPs
+      const gcpCount = Array.isArray(props.gcps) ? props.gcps.length : undefined;
+      if (gcpCount != null) rows.push(['GCPs', `${fmtNum(gcpCount)}`]);
+
+      // Geometry extent (WGS84)
+      if (extent4326) {
+        const [minX,minY,maxX,maxY] = extent4326;
+        const centerLon = (minX + maxX) / 2;
+        const centerLat = (minY + maxY) / 2;
+        rows.push(['Extent (lon/lat)', `${minX.toFixed(4)}, ${minY.toFixed(4)} → ${maxX.toFixed(4)}, ${maxY.toFixed(4)}`]);
+        rows.push(['Center', `${centerLon.toFixed(5)}, ${centerLat.toFixed(5)}`]);
+      }
+
+      // Original map id
+      if (props.id) rows.push(['Annotation ID', `<a class="link" href="${esc(props.id)}" target="_blank" rel="noreferrer">${short(props.id)}</a>`]);
+
+      // Fallback: include any extra simple scalar props not already shown
+      const shown = new Set(rows.map(r => r[0]));
+      for (const [k,v] of Object.entries(props)) {
+        if (shown.has(k)) continue;
+        if (v == null) continue;
+        if (['resource','gcps','resourceMask','transformation','_allmaps'].includes(k)) continue;
+        if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
+          rows.push([k, esc(v)]);
+        }
+      }
+
+      return `<div class="kvgrid">${rows.map(([k,v]) => `<div class="kv-key">${esc(k)}</div><div class="kv-val">${v}</div>`).join('')}</div>`;
+    }
+
+    function renderMetadataSummary(gj, feats, extent3857) {
+      if (!metaSummary) return;
+      try {
+        const props = (gj && gj.features && gj.features[0] && gj.features[0].properties) ? gj.features[0].properties : null;
+        const extent4326 = extent3857 ? ol.proj.transformExtent(extent3857, 'EPSG:3857','EPSG:4326') : null;
+        const html = buildSummaryHTML(props, gj?.features?.[0], extent4326);
+        metaSummary.innerHTML = html || '–';
+      } catch (e) {
+        console.error(e);
+        metaSummary.textContent = 'Could not render summary.';
+      }
+    }
+
+
+    // Helper: fit to features extent
+    function fitToFeatures(features) {
+      if (!features || features.length === 0) return;
+      const extent = ol.extent.createEmpty();
+      features.forEach(f => ol.extent.extend(extent, f.getGeometry().getExtent()));
+      if (!ol.extent.isEmpty(extent)) {
+        map.getView().fit(extent, { padding: [80, 20, 20, 20], duration: 500, maxZoom: 18 });
+      }
+    }
+
+    // Load Allmaps overlay by ID
+    async function loadAllmaps(id) {
+      if (!id) return;
+      statusEl.textContent = 'Loading tiles and footprint...';
+      statusEl.className = 'small muted';
+      if (metaBtn) metaBtn.disabled = true;
+      if (metaSummary) metaSummary.textContent = '–';
+
+      // Update overlay tile source
+      const tileUrl = `https://allmaps.xyz/images/${id}/{z}/{x}/{y}@2x.png`;
+      overlayLayer.setSource(new ol.source.XYZ({
+        url: tileUrl,
+        crossOrigin: 'anonymous',
+        attributions: 'Tiles © Allmaps',
+        maxZoom: 22,
+        tilePixelRatio: 2
+      }));
+      overlayLayer.setVisible(true);
+
+      // Fetch metadata (GeoJSON footprint)
+      const metaUrl = `https://annotations.allmaps.org/images/${id}.geojson`;
+      metaLinkWrap.innerHTML = `<a class="link" href="${metaUrl}" target="_blank" rel="noreferrer">${metaUrl}</a>`;
+
+      try {
+        const res = await fetch(metaUrl, { mode: 'cors' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const gj = await res.json();
+
+        // Parse and draw footprint
+        footprintSource.clear();
+        const reader = new ol.format.GeoJSON();
+        const feats = reader.readFeatures(gj, {
+          dataProjection: 'EPSG:4326',
+          featureProjection: 'EPSG:3857'
+        });
+        footprintSource.addFeatures(feats);
+
+        let extent3857 = null;
+        if (feats.length > 0) {
+          extent3857 = ol.extent.createEmpty();
+          feats.forEach(f => ol.extent.extend(extent3857, f.getGeometry().getExtent()));
+        }
+        if (feats.length > 0 && extent3857) {
+          overlayLayer.setExtent(extent3857);
+          fitToFeatures(feats);
+        }
+
+
+        renderMetadataSummary(gj, feats, extent3857);
+        if (metaBtn) metaBtn.disabled = false;
+        overlayLayer.changed();
+        statusEl.innerHTML = `<span class="ok">Loaded</span>: <code>${id}</code>`;
+      } catch (err) {
+        console.error(err);
+        statusEl.innerHTML = `<span class="error">Failed to load metadata</span> for <code>${id}</code>. Tiles may still display if the ID is valid.`;
+        // Clear footprint extent limit so tiles can still show if metadata failed
+        overlayLayer.setExtent(undefined);
+        if (metaSummary) metaSummary.textContent = 'Could not load metadata summary for this ID.';
+      }
+    }
+
+    // Wire button + Enter key
+    loadBtn.addEventListener('click', () => loadAllmaps(idInput.value.trim()));
+    idInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') loadAllmaps(idInput.value.trim());
+    });
+
+    // Support URL ?id=... to auto-load
+    (function initFromQuery() {
+      const u = new URL(location.href);
+      const qid = u.searchParams.get('id');
+      if (qid) {
+        idInput.value = qid;
+        loadAllmaps(qid);
+      }
+    })();
+  </script>
+</body>
+</html>
