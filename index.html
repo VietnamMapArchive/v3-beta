@@ -31,7 +31,7 @@
     select, input[type="text"], button {
       font-size: 14px; padding: 8px 10px; border-radius: 8px; border: 1px solid #ccc; outline: none;
     }
-    /* Prevent mobile zoom on input focus by keeping font-size >=16px */
+    /* Prevent mobile (iOS/Android) zoom on input focus by keeping form controls >=16px */
     @media (hover:none) and (pointer:coarse) {
       input[type="text"],
       input[type="search"],
@@ -40,9 +40,8 @@
       input[type="number"],
       input[type="password"],
       textarea,
-      select,
-      button {
-        font-size: 16px !important;
+      select {
+        font-size: 16px;
       }
     }
     button { cursor: pointer; background: #111827; color: #fff; border: none; }
@@ -1278,7 +1277,7 @@
     }
 
    
-      
+   
     function zoomToSearchResult(it){
       try {
 
@@ -1370,10 +1369,10 @@
           limit: '10'
         });
 
-        // Use AllOrigins CORS proxy
-        const proxyUrl = 'https://api.allorigins.win/raw?url=';
+        // Direct fetch to Nominatim (no proxy)
         const nominatimUrl = `https://nominatim.openstreetmap.org/search?${params}`;
-        const res = await fetch(proxyUrl + encodeURIComponent(nominatimUrl), {
+        const res = await fetch(nominatimUrl, {
+          headers: { 'Accept': 'application/json' },
           signal: searchAbort.signal
         });
 
