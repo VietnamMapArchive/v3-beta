@@ -123,14 +123,14 @@
     .lens-handle { cursor: nwse-resize; }
 
     .range { width: 100%; }
-    /* Tab strip: pill buttons with icons (visual only) */
-    .tabs { display:flex; align-items:center; gap:10px; padding:2px; margin-bottom:4px; }
+    /* Tab strip: pill buttons, text-only, small and tight */
+    .tabs { display:flex; align-items:center; gap:6px; padding:2px; margin-bottom:4px; }
     .tab-btn {
       position: relative;
-      display: inline-flex; align-items: center; gap: 8px;
+      display: inline-flex; align-items: center; gap: 0;
       appearance: none; cursor: pointer;
       font-size: 13px; font-weight: 600; color: #111827;
-      padding: 10px 14px; border-radius: 12px;
+      padding: 6px 10px; border-radius: 12px;
       border: 1px solid #e5e7eb;
       background: linear-gradient(#ffffff, #f8fafc);
       box-shadow: 0 1px 0 rgba(0,0,0,0.03), inset 0 -1px 0 rgba(0,0,0,0.02);
@@ -139,17 +139,6 @@
     .tab-btn:hover { background: #f3f4f6; border-color:#d1d5db; }
     .tab-btn:active { transform: translateY(0.5px); }
     .tab-btn.active { background:#111827; color:#fff; border-color:#111827; box-shadow: 0 2px 6px rgba(0,0,0,0.12) inset; }
-
-    /* Left icons for each tab (CSS masks with inline SVGs) */
-    .tab-btn::before { content:""; width:16px; height:16px; display:inline-block; background: currentColor; -webkit-mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; mask-size: contain; mask-repeat: no-repeat; mask-position: center; }
-    /* Control = sliders */
-    #tabControl::before { -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23000"><path d="M10 6h10v2H10V6zM4 6h2v2H4V6zm6 10h10v2H10v-2zM4 16h2v2H4v-2zm6-5h10v2H10v-2zM4 11h2v2H4v-2z"/></svg>'); mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23000"><path d="M10 6h10v2H10V6zM4 6h2v2H4V6zm6 10h10v2H10v-2zM4 16h2v2H4v-2zm6-5h10v2H10v-2zM4 11h2v2H4v-2z"/></svg>'); }
-    /* Research = magnifying glass */
-    #tabResearch::before { -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23000"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>'); mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23000"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>'); }
-    /* Search = map-pin */
-    #tabSearch::before { -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23000"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 119.5 9 2.5 2.5 0 0112 11.5z"/></svg>'); mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23000"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 119.5 9 2.5 2.5 0 0112 11.5z"/></svg>'); }
-    /* More = share arrow */
-    #tabMore::before { -webkit-mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23000"><path d="M14 9l-1.41 1.41L16.17 14H10a6 6 0 100 2h6.17l-3.58 3.59L14 21l6-6-6-6z"/></svg>'); mask-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23000"><path d="M14 9l-1.41 1.41L16.17 14H10a6 6 0 100 2h6.17l-3.58 3.59L14 21l6-6-6-6z"/></svg>'); }
     /* labeled separator under tabs */
     .section-sep { display:flex; align-items:center; gap:10px; margin:4px 0 8px; }
     .section-sep::before, .section-sep::after { content:""; flex:1; height:2px; background: linear-gradient(to right, transparent, #cbd5e1, transparent); }
@@ -191,9 +180,9 @@
       .control-grid { grid-template-columns: max-content 1fr; }
       /* Keep controls compact; make overlay input the same visual width as basemap */
       .control-grid #basemap,
-      .control-grid #allmapsId { width: min(70vw, 260px); }
+      .control-grid #allmapsId { width: min(50vw, 200px); }
       /* Bigger resizer target on mobile */
-      .bar-resizer { height: 28px; }
+      .bar-resizer { height: 21px; }
       .bar-resizer .grip { width: 72px; height: 6px; }
       /* Mobile: split Research toolbar into two lines */
       .toolbar { flex-wrap: wrap; justify-content: center; }
@@ -290,9 +279,9 @@
     /* Slimmer bottom padding */
     .bottombar { padding: 0px 0px calc(2px + env(safe-area-inset-bottom, 0px)); }
 
-    /* Tabs: same pill look, tighter spacing */
-    .tabs { display:flex; align-items:center; gap:8px; padding:0 2px; margin-bottom:2px; }
-    .tab-btn { padding:9px 13px; }
+    /* Tabs: text-only, smaller, tighter spacing */
+    .tabs { display:flex; align-items:center; gap:6px; padding:0 2px; margin-bottom:2px; }
+    .tab-btn { padding:6px 10px; }
 
     /* Separator tighter */
     .section-sep { display:block; height:1px; background:#cbd5e1; margin:4px 0 6px; }
@@ -715,7 +704,7 @@
       const bar = document.querySelector('.bottombar');
       const grip = document.getElementById('barResizer');
       if (!bar || !grip) return;
-      const MIN_H = 150; // px – ensure tabs + separator + credit always visible
+      const MIN_H = 200; // px – ensure tabs + separator + credit always visible
       function clamp2(v,a,b){ return Math.max(a, Math.min(b, v)); }
       function apply(h){ bar.style.height = h + 'px'; }
 
