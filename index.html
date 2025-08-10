@@ -265,11 +265,11 @@
     /* right-click coordinate popup */
     .coordmenu {
       position: absolute; z-index: 2500; display: none;
-      background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
+      background: #fff; border: 1px solid #e7e7eb; border-radius: 10px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.18); padding: 10px; min-width: 220px;
     }
     .coordmenu .hd { font-weight: 600; font-size: 13px; color:#111827; margin-bottom: 6px; }
-    .coordmenu .val { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12px; color:#111827; background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:6px 8px; cursor: pointer; user-select: all; }
+    .coordmenu .val { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12px; color:#111827; background:#f9fafb; border:1px solid #e7e7eb; border-radius:8px; padding:6px 8px; cursor: pointer; user-select: all; }
     .coordmenu .sub { font-size: 12px; color:#6b7280; margin-top: 6px; }
     .coordmenu .actions { display:flex; gap:8px; margin-top:8px; }
     .coordmenu button { padding: 6px 10px; font-size: 12px; border-radius: 8px; background:#111827; color:#fff; border:none; cursor:pointer; }
@@ -349,7 +349,7 @@
     </div>
     <div id="panelDivider" class="section-sep"><span id="panelDividerLabel">Control</span></div>
 
-    <div id="panelControl" class="tab-panel active">
+    <div id="panelControl" class="tab-panel active" role="tabpanel" aria-labelledby="tabControl">
       <div class="control-grid">
         <!-- Row 1: labels -->
         <div class="lbl">Basemap</div>
@@ -388,7 +388,7 @@
       <div id="status" class="small muted" aria-live="polite"></div>
     </div>
 
-    <div id="panelResearch" class="tab-panel">
+    <div id="panelResearch" class="tab-panel" role="tabpanel" aria-labelledby="tabResearch">
       <div class="toolbar">
         <button id="btnPoint" type="button" class="tool-btn">Point</button>
         <button id="btnLine" type="button" class="tool-btn">Line</button>
@@ -412,20 +412,20 @@
       </div>
     </div>
 
-    <div id="panelSearch" class="tab-panel">
+    <div id="panelSearch" class="tab-panel" role="tabpanel" aria-labelledby="tabSearch">
       <div class="inline" style="gap:10px; align-items: center; width:100%;">
         <span class="lbl">Place</span>
         <input id="searchQuery" type="text" class="w-100" placeholder="e.g., Ho Chi Minh City, Notre-Dame Cathedral" />
-        <button id="searchBtn" type="button" class="btn-green">Search</button>
+        <!-- Removed the Search button -->
         <button id="searchClear" type="button" class="btn-red">Clear</button>
-        <button id="searchLocate" type="button" class="btn-indigo" title="Find my location">My location</button>
+        <button id="searchLocate" type="button" class="btn-green" title="Find my location">My location</button>
       </div>
-      <div class="small muted" style="margin-top:6px;">Search powered by Nominatim / OpenStreetMap. Click a result to zoom. Use the <b>Add</b> button on a result to add it to annotations (the search list clears after adding).</div>
+      <div class="small muted" style="margin-top:6px;">Search powered by Nominatim / OpenStreetMap. Type a place and press <b>Enter</b> to search. Click a result to zoom. Use the <b>Add</b> button on a result to add it to annotations (the search list clears after adding).</div>
       <div class="results-wrap">
         <div id="searchResults" class="results"></div>
       </div>
     </div>
-    <div id="panelMore" class="tab-panel">
+    <div id="panelMore" class="tab-panel" role="tabpanel" aria-labelledby="tabMore">
       <div class="sticky-actions">
         <!-- TODO: replace example.com URLs with your real destinations -->
         <a class="btn-chip" href="https://example.com/about" target="_blank" rel="noreferrer">About Us</a>
@@ -898,7 +898,13 @@
 
     // --- ARIA enhancements and keyboard shortcuts for tabs ---
     function applyTabAria(){
-      const set = (panel, tab) => { if(!panel||!tab) return; panel.setAttribute('role','tabpanel'); panel.setAttribute('aria-labelledby', tab.id); panel.setAttribute('aria-hidden', panel.classList.contains('active') ? 'false' : 'true'); };
+      const set = (panel, tab) => {
+        if(!panel||!tab) return;
+        panel.setAttribute('role','tabpanel');
+        panel.setAttribute('aria-labelledby', tab.id);
+        // REMOVE aria-hidden to avoid accessibility warning
+        if (panel.hasAttribute('aria-hidden')) panel.removeAttribute('aria-hidden');
+      };
       set(panelControl, tabControl);
       set(panelResearch, tabResearch);
       set(panelSearch, tabSearch);
@@ -1270,8 +1276,14 @@
       });
     }
 
+   
     function zoomToSearchResult(it){
       try {
+
+
+
+
+
         searchSource.clear();
         // geometry if provided
         if (it.geojson) {
@@ -1331,38 +1343,59 @@
 
     let searchAbort = null;
     let searchTimer = null;
+    let lastSearchTime = 0;
+    const MIN_SEARCH_INTERVAL = 1000; // 1 second between searches
 
     async function runSearchNow(){
       const q = (searchQuery?.value || '').trim();
-      if (!q){ if (searchResults) searchResults.innerHTML = '<div class="small muted">Enter a place or address.</div>'; return; }
+      if (!q){ 
+        if (searchResults) searchResults.innerHTML = '<div class="small muted">Enter a place or address.</div>'; 
+        return; 
+      }
 
       if (searchAbort) { try{ searchAbort.abort(); }catch(_){} }
       searchAbort = new AbortController();
 
       if (searchResults) searchResults.innerHTML = '<div class="small muted">Searching…</div>';
+
       try {
         const params = new URLSearchParams({
-          format:'jsonv2', q,
-          addressdetails:'1', namedetails:'1',
-          polygon_geojson:'1', limit:'10'
+          format: 'jsonv2',
+          q,
+          addressdetails: '1',
+          namedetails: '1',
+          polygon_geojson: '1',
+          limit: '10'
         });
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
-          headers: { 'Accept':'application/json' },
+
+        // Use AllOrigins CORS proxy
+        const proxyUrl = 'https://api.allorigins.win/raw?url=';
+        const nominatimUrl = `https://nominatim.openstreetmap.org/search?${params}`;
+        const res = await fetch(proxyUrl + encodeURIComponent(nominatimUrl), {
           signal: searchAbort.signal
         });
-        if (!res.ok) throw new Error('Search failed: '+res.status);
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         renderSearchItems(Array.isArray(data) ? data : []);
+
       } catch(err) {
         if (err.name === 'AbortError') return;
-        console.error(err);
-        if (searchResults) searchResults.innerHTML = '<div class="small error">Search error. Please try again.</div>';
+        console.error('Search error:', err);
+        if (searchResults) {
+          searchResults.innerHTML = '<div class="small error">Search failed. Please try again later.</div>';
+        }
       }
     }
 
     function queueSearch(){
       if (searchTimer) clearTimeout(searchTimer);
-      searchTimer = setTimeout(runSearchNow, 400);
+      const now = Date.now();
+      const wait = Math.max(0, MIN_SEARCH_INTERVAL - (now - lastSearchTime));
+      searchTimer = setTimeout(() => {
+        lastSearchTime = Date.now();
+        runSearchNow();
+      }, wait + 400);
     }
 
     if (searchBtn) searchBtn.addEventListener('click', runSearchNow);
