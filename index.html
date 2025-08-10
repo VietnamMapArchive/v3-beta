@@ -31,7 +31,7 @@
     select, input[type="text"], button {
       font-size: 14px; padding: 8px 10px; border-radius: 8px; border: 1px solid #ccc; outline: none;
     }
-    /* Prevent mobile (iOS/Android) zoom on input focus by keeping form controls >=16px */
+    /* Prevent mobile zoom on input focus by keeping font-size >=16px */
     @media (hover:none) and (pointer:coarse) {
       input[type="text"],
       input[type="search"],
@@ -40,8 +40,9 @@
       input[type="number"],
       input[type="password"],
       textarea,
-      select {
-        font-size: 16px;
+      select,
+      button {
+        font-size: 16px !important;
       }
     }
     button { cursor: pointer; background: #111827; color: #fff; border: none; }
@@ -420,7 +421,6 @@
         <button id="searchClear" type="button" class="btn-red">Clear</button>
         <button id="searchLocate" type="button" class="btn-green" title="Find my location">My location</button>
       </div>
-      <div class="small muted" style="margin-top:6px;">Search powered by Nominatim / OpenStreetMap. Type a place and press <b>Enter</b> to search. Click a result to zoom. Use the <b>Add</b> button on a result to add it to annotations (the search list clears after adding).</div>
       <div class="results-wrap">
         <div id="searchResults" class="results"></div>
       </div>
