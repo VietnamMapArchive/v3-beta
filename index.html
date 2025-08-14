@@ -107,6 +107,21 @@
     .modal .hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
     .modal .close { background: transparent; border: none; font-size: 20px; line-height: 1; cursor: pointer; padding: 6px; }
 
+    /* Loading spinner */
+    .loader {
+      border: 3px solid #f3f4f6; /* tailwind gray-100 */
+      border-top: 3px solid #3b82f6; /* tailwind blue-500 */
+      border-radius: 50%;
+      width: 18px;
+      height: 18px;
+      animation: spin 1s linear infinite;
+      display: none; /* Hidden by default */
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
     /* split guides + spyglass */
     .divider-v { position:absolute; top:0; left:0; width:0; height:0; border-left:2px dashed rgba(0,0,0,0.45); pointer-events:none; z-index:999; display:none; }
     .divider-h { position:absolute; top:0; left:0; width:0; height:0; border-top:2px dashed rgba(0,0,0,0.45); pointer-events:none; z-index:999; display:none; }
@@ -381,11 +396,20 @@
           <input id="opacityRange" class="range" type="range" min="0" max="1" step="0.01" value="0.80" />
           <span id="opLabel" class="small muted">80%</span>
         </div>
+
+        <div class="lbl">Custom ID</div>
+        <div class="inline" style="grid-column: 2 / -1;">
+          <input class="w-100" type="text" id="customMapId" placeholder="Or enter a custom Allmaps ID..." />
+          <button id="loadCustomBtn" class="btn-green" style="flex-shrink: 0;">Load</button>
+        </div>
       </div>
       <div class="inline" style="gap:12px; align-items:center; justify-content:center;">
         <button id="metaBtn" class="btn-lg" title="Show metadata" disabled>Metadata</button>
       </div>
-      <div id="status" class="small muted" aria-live="polite"></div>
+      <div class="inline" style="justify-content: center; align-items: center; gap: 8px; min-height: 20px; margin-top: 4px;">
+        <div id="loader" class="loader"></div>
+        <div id="status" class="small muted" aria-live="polite"></div>
+      </div>
     </div>
 
     <div id="panelResearch" class="tab-panel" role="tabpanel" aria-labelledby="tabResearch">
@@ -685,6 +709,9 @@
     const dividerHandleY = document.getElementById('dividerHandleY');
     const lensEl = document.getElementById('lens');
     const lensHandle = document.getElementById('lensHandle');
+    const loader = document.getElementById('loader');
+    const customMapIdInput = document.getElementById('customMapId');
+    const loadCustomBtn = document.getElementById('loadCustomBtn');
     const coordMenu  = document.getElementById('coordMenu');
     const coordValue = document.getElementById('coordValue');
     const coordCopy  = document.getElementById('coordCopy');
@@ -829,6 +856,7 @@
       currentMapId = null;
       warpedMapLayer.clear();
       footprintSource.clear();
+      if (loader) loader.style.display = 'block';
       if (statusEl) {
         statusEl.textContent = 'Loading map annotation...';
         statusEl.className = 'small muted';
@@ -870,6 +898,8 @@
         }
         warpedMapLayer.clear();
         footprintSource.clear();
+      } finally {
+        if (loader) loader.style.display = 'none';
       }
     }
     
@@ -1477,7 +1507,7 @@
 
       function populateMapSelector() {
         if (!mapSelector) return;
-        mapSelector.innerHTML = '';
+        mapSelector.innerHTML = '<option value="" disabled selected>Select a map from the list...</option>';
         mapDataset.forEach(map => {
           const option = document.createElement('option');
           option.value = map.id;
@@ -1490,8 +1520,23 @@
         const selectedId = mapSelector.value;
         if (selectedId) {
           loadAllmaps(selectedId);
+          if (customMapIdInput) customMapIdInput.value = '';
         }
       });
+
+      if (loadCustomBtn && customMapIdInput) {
+        const loadFromInput = () => {
+          const id = customMapIdInput.value.trim();
+          if (id) {
+            loadAllmaps(id);
+            mapSelector.value = ''; // Deselect dropdown
+          }
+        };
+        loadCustomBtn.addEventListener('click', loadFromInput);
+        customMapIdInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') loadFromInput();
+        });
+      }
 
       populateMapSelector();
 
