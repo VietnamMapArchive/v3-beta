@@ -448,14 +448,14 @@
     
     <div id="panelMore" class="tab-panel" role="tabpanel" aria-labelledby="tabMore">
       <div class="sticky-actions">
-        <a class="btn-chip" href="https://example.com/about" target="_blank" rel="noreferrer">About Us</a>
-        <a class="btn-chip" href="https://example.com/blog" target="_blank" rel="noreferrer">Blog</a>
-        <a class="btn-chip" href="https://example.com/contact" target="_blank" rel="noreferrer">Get in touch</a>
+        <a class="btn-chip" href="https://www.canva.com/design/DAGsdCxbAho/UqzPt9W5ceAJH7sPdhvYOg/view?utm_content=DAGsdCxbAho&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h9602289aa0" target="_blank" rel="noreferrer">About Us</a>
+        <a class="btn-chip" href="https://forms.gle/xJexnw5sDWxSETNt5" target="_blank" rel="noreferrer">Feedback</a>
+        <a class="btn-chip" href="mailto:vietnam.ma.project@gmail.com" target="_blank" rel="noreferrer">Email Us</a>
       </div>
       <div class="small" style="margin-top:10px;">
         <div style="font-weight:600; margin-bottom:6px;">Tips & Shortcuts</div>
         <ul style="margin:0; padding-left: 18px; display:grid; gap:6px;">
-          <li><b>Rotate map:</b> hold <b>Ctrl</b> (Windows/Linux) or <b>⌘ Cmd</b> (macOS) and drag. On touchpads, use a two‑finger rotate gesture. Click the rotate control to reset north‑up. Rotation is disabled in side and spyglass mode.</li>
+          <li><b>Rotate map:</b> hold <b>Ctrl</b> (Windows/Linux) or <b>⌘ Cmd</b> (macOS) and drag. Click the rotate control to reset north‑up. Rotation is disabled in side and spyglass mode.</li>
           <li><b>Zoom:</b> scroll the mouse wheel or double‑click to zoom in.</li>
           <li><b>View modes:</b> pick <i>Overlay / Side‑by‑side X / Side‑by‑side Y / Spyglass</i>. In side‑by‑side, drag the small circle handle to move the divider. In spyglass, drag the small knob on the right edge to resize.</li>
           <li><b>Annotations:</b> choose Point/Line/Object. Press <b>Enter</b> to finish a line/polygon, <b>Esc</b> to cancel the current sketch. Edit labels in the table; use <i>Zoom</i> or <i>Delete</i> in the Actions column. Use <i>Export CSV</i> / <i>Import CSV</i> to save/restore.</li>
@@ -466,7 +466,7 @@
       </div>
     </div>
     <div class="creditbar small muted">
-      <span>© The Vietnam Map Archive Project · OpenStreetMap contributors · Allmaps · Built with OpenLayers</span>
+      <span>The Vietnam Map Archive (VMA) Project · Built with OpenLayers, Allmaps & OSM</span>
       <span class="spacer"></span>
     </div>
   </div>
@@ -479,7 +479,6 @@
       </div>
       <div id="metaSummary" class="small">–</div>
       <div class="small" style="margin-top:10px;">Footprint source: <span id="metaLinkWrap" class="muted">–</span></div>
-      <div class="small muted" style="margin-top:10px;">Attribution: © <a class="link" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors · Allmaps. Google tiles usage may require permission and a proper API.</div>
     </div>
   </div>
 
@@ -629,7 +628,7 @@
       layers: [esriImageryLayer, googleStreets, googleSatellite, warpedMapLayer, footprintLayer, researchLayer, searchLayer],
       view: new ol.View({
         center: ol.proj.fromLonLat([106.70098, 10.77653]),
-        zoom: 12,
+        zoom: 14,
         enableRotation: true,
         constrainRotation: false
       })
@@ -879,7 +878,7 @@
 
         const extent = warpedMapLayer.getExtent();
         if (extent && !ol.extent.isEmpty(extent)) {
-            map.getView().fit(extent, { padding: [80, 20, 20, 20], duration: 500, maxZoom: 18 });
+            // map.getView().fit(extent, { padding: [80, 20, 20, 20], duration: 500, maxZoom: 18 }); // <-- REMOVE THIS LINE
             const footprintFeature = new ol.Feature(ol.geom.Polygon.fromExtent(extent));
             footprintSource.addFeature(footprintFeature);
         }
