@@ -380,6 +380,8 @@
         currentMapId: null,
         loadedOverlayId: null,
         loadingMapController: null,
+        annotationCache: {},
+        annotationToMapId: {},
         rotationLocked: false,
         view: {
           mode: 'overlay',
@@ -668,15 +670,51 @@
       }
     }
 
-    async function loadAllmaps(id) {
-      if (!id) return;
+    // This function replaces the old loadAllmaps logic.
+    // It caches annotations and manages map visibility to avoid re-loading.
+    async function setActiveMap(id) {
+      const previousLoadedId = appState.map.loadedOverlayId;
+      if (id === previousLoadedId) return;
+
       if (appState.map.loadingMapController) appState.map.loadingMapController.abort();
       appState.map.loadingMapController = new AbortController();
       const { signal } = appState.map.loadingMapController;
 
-      appState.map.currentMapId = null;
-      appState.map.loadedOverlayId = null;
-      warpedMapLayer.clear();
+      // Hide current map
+      if (appState.map.currentMapId) {
+        warpedMapLayer.setMapVisible(appState.map.currentMapId, false);
+      }
+
+      // If no new ID, clear state and return
+      if (!id) {
+        appState.map.currentMapId = null;
+        appState.map.loadedOverlayId = null;
+        metaBtn.disabled = true;
+        statusEl.textContent = 'No overlay map selected.';
+        warpedMapLayer.changed();
+        queueSaveState();
+        return;
+      }
+
+      // If map is already loaded in the layer, just make it visible
+      const existingMapId = appState.map.annotationToMapId[id];
+      if (existingMapId) {
+        warpedMapLayer.setMapVisible(existingMapId, true);
+        appState.map.currentMapId = existingMapId;
+        appState.map.loadedOverlayId = id;
+        
+        const annotation = appState.map.annotationCache[id];
+        if (annotation) {
+          renderMetadataSummary(annotation, null, warpedMapLayer.getExtent(existingMapId));
+          metaBtn.disabled = false;
+        }
+        statusEl.textContent = 'Map loaded from cache.';
+        warpedMapLayer.changed();
+        queueSaveState();
+        return;
+      }
+
+      // Map not loaded yet, so fetch and process it
       loader.classList.remove('hidden');
       statusEl.textContent = 'Loading map...';
       statusEl.classList.remove('text-red-600');
@@ -686,18 +724,27 @@
       metaLinkWrap.innerHTML = `<a class="text-indigo-600 hover:underline" href="${annotationUrl}" target="_blank" rel="noreferrer">${annotationUrl}</a>`;
 
       try {
-        const response = await fetch(annotationUrl, { signal });
-        if (!response.ok) throw new Error(`Annotation not found (HTTP ${response.status})`);
-        const annotation = await response.json();
-        if (signal.aborted) return;
+        let annotation = appState.map.annotationCache[id];
+        if (!annotation) {
+            const response = await fetch(annotationUrl, { signal });
+            if (!response.ok) throw new Error(`Annotation not found (HTTP ${response.status})`);
+            annotation = await response.json();
+            if (signal.aborted) return;
+            appState.map.annotationCache[id] = annotation;
+        }
+        
         const mapIds = await warpedMapLayer.addGeoreferenceAnnotation(annotation);
         if (signal.aborted) return;
         if (!mapIds || mapIds.length === 0 || mapIds[0] instanceof Error) throw mapIds[0] || new Error('Failed to add map to layer.');
         
-        appState.map.currentMapId = mapIds[0];
+        const newMapId = mapIds[0];
+        appState.map.annotationToMapId[id] = newMapId;
+        
+        // New map is visible by default after being added
+        appState.map.currentMapId = newMapId;
         appState.map.loadedOverlayId = id;
         
-        renderMetadataSummary(annotation, null, warpedMapLayer.getExtent());
+        renderMetadataSummary(annotation, null, warpedMapLayer.getExtent(newMapId));
         metaBtn.disabled = false;
         statusEl.textContent = 'Map loaded successfully.';
         
@@ -710,6 +757,17 @@
         console.error(err);
         statusEl.textContent = `Error: ${err.message}`;
         statusEl.classList.add('text-red-600');
+        // On failure, try to restore the previously active map
+        const previousMapId = appState.map.annotationToMapId[previousLoadedId];
+        if (previousMapId) {
+            warpedMapLayer.setMapVisible(previousMapId, true);
+            appState.map.currentMapId = previousMapId;
+            appState.map.loadedOverlayId = previousLoadedId;
+            statusEl.textContent += ' Restoring previous map.';
+        } else {
+            appState.map.currentMapId = null;
+            appState.map.loadedOverlayId = null;
+        }
       } finally {
         if (!signal.aborted) {
           loader.classList.add('hidden');
@@ -719,19 +777,18 @@
     }
     mapSelector.addEventListener('change', () => {
       if (mapSelector.value) {
-        loadAllmaps(mapSelector.value);
+        setActiveMap(mapSelector.value);
         customMapIdInput.value = '';
       }
     });
     const loadFromInput = () => {
       const id = customMapIdInput.value.trim();
       if (id) {
-        loadAllmaps(id);
+        setActiveMap(id);
         mapSelector.value = '';
       }
     };
     loadCustomBtn.addEventListener('click', loadFromInput);
-    customMapIdInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') loadFromInput(); });
 
     // --- View Mode & Opacity ---
     function setViewOverlaysPointerEvents(value) {
@@ -1049,13 +1106,8 @@
         if (!scene) return;
         setBasemap(scene.basemap);
         basemapSel.value = scene.basemap;
-        if (scene.overlayId && scene.overlayId !== appState.map.loadedOverlayId) {
-            await loadAllmaps(scene.overlayId);
-        } else if (!scene.overlayId && appState.map.currentMapId) {
-            warpedMapLayer.clear();
-            appState.map.currentMapId = null;
-            appState.map.loadedOverlayId = null;
-        }
+        await setActiveMap(scene.overlayId);
+
         if (scene.overlayId && appState.map.currentMapId) {
             mapSelector.value = scene.overlayId;
             opacityRange.value = scene.opacity;
@@ -1537,7 +1589,7 @@
             }
             if (state.overlayId) {
                 mapSelector.value = state.overlayId;
-                await loadAllmaps(state.overlayId);
+                await setActiveMap(state.overlayId);
                 if (state.view?.opacity && appState.map.currentMapId) {
                     warpedMapLayer.setMapOpacity(appState.map.currentMapId, state.view.opacity);
                 }
@@ -1587,14 +1639,14 @@
         const qid = new URL(location.href).searchParams.get('id');
         if (qid && qid !== appState.map.loadedOverlayId) {
             mapSelector.value = qid;
-            await loadAllmaps(qid);
+            await setActiveMap(qid);
             return;
         }
         if (!appState.map.loadedOverlayId) {
             const firstMapId = mapSelector.options[1]?.value;
             if (firstMapId) {
                 mapSelector.value = firstMapId;
-                await loadAllmaps(firstMapId);
+                await setActiveMap(firstMapId);
             }
         }
     }
