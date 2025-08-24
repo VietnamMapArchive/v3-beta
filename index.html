@@ -28,7 +28,7 @@
     }
     .row { display: grid; grid-template-columns: 1fr; gap: 8px; margin-bottom: 10px; }
     label { font-size: 12px; color: #333; }
-    select, input[type="text"], button {
+    select, input[type="text"], button, textarea {
       font-size: 14px; padding: 8px 10px; border-radius: 8px; border: 1px solid #ccc; outline: none;
     }
     /* Prevent mobile zoom on input focus by keeping font-size >=16px */
@@ -218,11 +218,11 @@
     .tbl { width: 100%; border-collapse: collapse; }
     .tbl th, .tbl td { border: 1px solid #e5e7eb; padding: 6px 8px; font-size: 12px; }
     .tbl th { background: #f8fafc; text-align: left; font-weight: 600; }
+    .tbl tr.hidden-row { opacity: 0.5; background: #f9fafb; }
     .tbl input[type="text"] { width: 100%; padding: 4px 6px; font-size: 12px; border: 1px solid #d1d5db; border-radius: 6px; }
 
     /* Annotation table action buttons */
-    .tbl td .anno-zoom,
-    .tbl td .anno-del {
+    .tbl td .anno-action {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -235,25 +235,17 @@
       box-shadow: none;
       line-height: 1.2;
       transition: background 0.14s;
+      margin-right: 4px;
     }
-    .tbl td .anno-zoom {
-      background-color: #111827;
-      color: #fff;
-    }
-    .tbl td .anno-zoom:hover,
-    .tbl td .anno-zoom:focus {
-      background-color: #374151;
-      color: #fff;
-    }
-    .tbl td .anno-del {
-      background-color: #dc2626;
-      color: #fff;
-    }
-    .tbl td .anno-del:hover,
-    .tbl td .anno-del:focus {
-      background-color: #b91c1c;
-      color: #fff;
-    }
+    .tbl td .anno-zoom { background-color: #111827; color: #fff; }
+    .tbl td .anno-zoom:hover { background-color: #374151; }
+    .tbl td .anno-edit { background-color: #2563eb; color: #fff; }
+    .tbl td .anno-edit:hover { background-color: #1d4ed8; }
+    .tbl td .anno-hide { background-color: #6b7280; color: #fff; }
+    .tbl td .anno-hide:hover { background-color: #4b5563; }
+    .tbl td .anno-del { background-color: #dc2626; color: #fff; }
+    .tbl td .anno-del:hover { background-color: #b91c1c; }
+
     /* annotation list scroll container */
     .anno-wrap { width: 100%; margin-top: 8px; flex:1 1 auto; min-height:0; overflow:auto; }
     /* keep table header visible while scrolling */
@@ -319,7 +311,7 @@
     }
 
     /* Inputs/select/buttons padding */
-    select, input[type="text"], button { font-size:14px; padding:7px 9px; border-radius:8px; border:1px solid #ccc; outline:none; }
+    select, input[type="text"], button, textarea { font-size:14px; padding:7px 9px; border-radius:8px; border:1px solid #ccc; outline:none; }
 
     /* Large buttons (Load / Metadata) */
     .btn-lg { font-size:14px; padding:8px 14px; border-radius:10px; }
@@ -331,6 +323,104 @@
 
     /* Helper text line-height for compact layout */
     .small { font-size:12px; color:#444; line-height:1.35; }
+
+    /* Annotation Modal Styles */
+    #annoModal .content { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    #annoModal label { font-weight: 600; font-size: 13px; }
+    #annoModal input[type="color"] { padding: 4px; height: 40px; }
+    #annoModal textarea { min-height: 80px; resize: vertical; }
+    #annoImageViewer { border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px; text-align: center; }
+    #annoImageViewer img { max-width: 100%; max-height: 250px; height: auto; border-radius: 6px; margin-bottom: 10px; }
+    #annoFlipBtn { margin-top: 8px; }
+
+    /* Read-only Popup Overlay */
+    #popup {
+      position: absolute;
+      background-color: white;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      bottom: 12px;
+      left: -50px;
+      min-width: 280px;
+      max-width: 320px;
+      pointer-events: auto;
+    }
+    #popup:before {
+      content: "";
+      position: absolute;
+      top: 100%;
+      left: 48px;
+      border-width: 8px;
+      border-style: solid;
+      border-color: #ccc transparent transparent transparent;
+    }
+    #popup-closer {
+      text-decoration: none;
+      position: absolute;
+      top: 2px;
+      right: 8px;
+      font-size: 20px;
+      cursor: pointer;
+      color: #333;
+    }
+    #popup-content h4 { margin: 0 0 8px; font-size: 14px; }
+    #popup-content p { margin: 0 0 8px; font-size: 12px; max-height: 60px; overflow-y: auto; }
+    #popup-content img { max-width: 100%; border-radius: 6px; }
+
+    /* Story Mode Panel */
+    #story-capture-form { display: grid; gap: 8px; padding: 8px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 10px; }
+    #story-list { list-style: none; padding: 0; margin: 0; }
+    #story-list .btn-sm { padding: 4px 8px; font-size: 12px; border-radius: 6px; }
+    #story-list li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    #story-list li:last-child { border-bottom: none; }
+    #story-list .scene-label { flex-grow: 1; font-size: 13px; font-weight: 600; }
+
+    /* Presentation Mode */
+    #presentation-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 3000;
+        display: none; /* Hidden by default */
+        flex-direction: column;
+        color: #fff;
+        font-family: system-ui, Arial, sans-serif;
+    }
+    #presentation-content {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        right: 20px;
+        background: rgba(17, 24, 39, 0.85);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 12px;
+        padding: 20px;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    #presentation-content h2 { margin: 0 0 10px; font-size: 20px; }
+    #presentation-content p { margin: 0; font-size: 14px; max-height: 100px; overflow-y: auto; }
+    #presentation-nav {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    #presentation-nav button {
+        background: rgba(17, 24, 39, 0.85);
+        border: 1px solid rgba(255,255,255,0.1);
+    }
   </style>
 </head>
 <body>
@@ -354,6 +444,24 @@
     </div>
   </div>
 
+  <div id="popup" class="ol-popup">
+    <a href="#" id="popup-closer" class="ol-popup-closer">&times;</a>
+    <div id="popup-content"></div>
+  </div>
+
+  <div id="presentation-overlay">
+    <div id="presentation-content">
+        <h2 id="presentation-title"></h2>
+        <p id="presentation-details"></p>
+    </div>
+    <div id="presentation-nav">
+        <span id="presentation-counter"></span>
+        <button id="presentation-prev">&lt; Prev</button>
+        <button id="presentation-next">Next &gt;</button>
+        <button id="presentation-exit" class="btn-red">Exit</button>
+    </div>
+  </div>
+
   <div class="bottombar">
     <div id="barResizer" class="bar-resizer" role="separator" aria-orientation="vertical" title="Drag to resize">
       <div class="grip"></div>
@@ -361,6 +469,7 @@
     <div class="tabs">
       <button id="tabControl" class="tab-btn active">Control</button>
       <button id="tabResearch" class="tab-btn">Research</button>
+      <button id="tabStory" class="tab-btn">Story</button>
       <button id="tabSearch" class="tab-btn">Search</button>
       <button id="tabMore" class="tab-btn">More</button>
       <span class="spacer"></span>
@@ -423,7 +532,7 @@
         <button id="exportCsv" type="button" disabled>Save</button>
         <button id="researchClear" class="btn-red">Clear</button>
       </div>
-      <div class="small muted" style="margin-top:6px;">Tip: In <b>Line</b> and <b>Object</b> modes, press <b>Enter</b> or click on the last point to finish drawing.</div>
+      <div class="small muted" style="margin-top:6px;">Tip: Click a feature on the map to view details. Use the table to Edit/Hide/Delete.</div>
       <div class="anno-wrap">
         <table id="annoTable" class="tbl">
           <thead>
@@ -432,6 +541,28 @@
           <tbody id="annoTbody"></tbody>
         </table>
       </div>
+    </div>
+
+    <div id="panelStory" class="tab-panel" role="tabpanel" aria-labelledby="tabStory">
+        <div id="story-capture-form">
+            <input type="text" id="sceneTitleInput" placeholder="Scene Title">
+            <textarea id="sceneDetailsInput" placeholder="Scene Details..." rows="2"></textarea>
+            <div class="inline" style="gap: 8px;">
+                <button id="captureSceneBtn" class="btn-lg btn-blue w-100">Capture Scene</button>
+                <button id="cancelEditBtn" class="btn-lg btn-red" style="display: none;">Cancel</button>
+            </div>
+        </div>
+        <div class="toolbar">
+            <button id="loadStoryBtn" class="btn-lg">Load Story</button>
+            <input id="loadStoryInput" type="file" accept=".json,application/json" style="display:none;" />
+            <button id="presentStoryBtn" class="btn-lg btn-indigo" disabled>Present Story</button>
+            <button id="downloadStoryBtn" class="btn-lg btn-green" disabled>Download Story</button>
+        </div>
+        <div class="anno-wrap">
+            <ul id="story-list">
+                <li class="muted" id="story-placeholder">No scenes captured yet.</li>
+            </ul>
+        </div>
     </div>
 
     <div id="panelSearch" class="tab-panel" role="tabpanel" aria-labelledby="tabSearch">
@@ -458,7 +589,7 @@
           <li><b>Rotate map:</b> hold <b>Ctrl</b> (Windows/Linux) or <b>⌘ Cmd</b> (macOS) and drag. Click the rotate control to reset north‑up. Rotation is disabled in side and spyglass mode.</li>
           <li><b>Zoom:</b> scroll the mouse wheel or double‑click to zoom in.</li>
           <li><b>View modes:</b> pick <i>Overlay / Side‑by‑side X / Side‑by‑side Y / Spyglass</i>. In side‑by‑side, drag the small circle handle to move the divider. In spyglass, drag the small knob on the right edge to resize.</li>
-          <li><b>Annotations:</b> choose Point/Line/Object. Press <b>Enter</b> to finish a line/polygon, <b>Esc</b> to cancel the current sketch. Edit labels in the table; use <i>Zoom</i> or <i>Delete</i> in the Actions column. Use <i>Export CSV</i> / <i>Import CSV</i> to save/restore.</li>
+          <li><b>Annotations:</b> choose Point/Line/Object. Press <b>Enter</b> to finish a line/polygon, <b>Esc</b> to cancel the current sketch. Click a feature on the map to open a popup to edit its details, color, and images. Use <i>Export CSV</i> / <i>Import CSV</i> to save/restore.</li>
           <li><b>Search:</b> type a place and press Enter. Click a result to zoom. Use the <i>Add</i> button on a result to add it to annotations (the search list clears after adding).</li>
           <li><b>Coordinates:</b> right‑click anywhere on the map to show lon,lat. Click the value or the <i>Copy</i> button to copy to clipboard.</li>
           <li><b>Opacity:</b> use the slider to adjust the overlay transparency.</li>
@@ -482,10 +613,55 @@
     </div>
   </div>
 
+  <!-- Annotation Edit Modal -->
+  <div id="annoModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="annoTitle">
+    <div class="content">
+      <div class="hd">
+        <h3 id="annoTitle" style="margin:0;">Edit Annotation</h3>
+        <button id="closeAnnoModal" class="close" aria-label="Close">×</button>
+      </div>
+      <div>
+        <label for="annoLabelInput">Label</label>
+        <input type="text" id="annoLabelInput" class="w-100" placeholder="A short name for the feature">
+      </div>
+      <div>
+        <label for="annoDetailsInput">Details</label>
+        <textarea id="annoDetailsInput" class="w-100" placeholder="Add detailed notes here..."></textarea>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: end;">
+        <div>
+          <label for="annoColorInput">Color</label>
+          <input type="color" id="annoColorInput" class="w-100" value="#2563eb">
+        </div>
+        <button id="saveAnnoBtn" class="btn-green btn-lg">Save Changes</button>
+      </div>
+      <div style="border-top: 1px solid #e5e7eb; margin-top: 10px; padding-top: 10px;">
+        <label for="annoImgCurrentInput">Current Image URL</label>
+        <input type="text" id="annoImgCurrentInput" class="w-100" placeholder="https://...">
+      </div>
+      <div>
+        <label for="annoImgPastInput">Past Image URL</label>
+        <input type="text" id="annoImgPastInput" class="w-100" placeholder="https://...">
+      </div>
+      <div id="annoImageViewer">
+        <img id="annoImage" src="" alt="Annotation image" style="display:none;" onerror="this.style.display='none';">
+        <p id="annoImageStatus" class="small muted" style="display:none;">No image provided.</p>
+        <button id="annoFlipBtn" style="display:none;">Flip to Past Image</button>
+      </div>
+    </div>
+  </div>
+
+
   <script>
     // --- State variables ---
-    let currentMapId = null; // Holds the ID of the currently loaded Allmaps map
+    let currentMapId = null; // Holds the internal ID from Allmaps library
+    let loadedOverlayId = null; // Holds the ID used to load the map (from sheet or input)
     let draw = null, keyDownFinish = null, keyDownCancel = null, fidCounter = 1;
+    let selectedFeatureId = null; // ID of the feature being edited in the modal
+    let story = []; // Array to hold captured story scenes
+    let currentSlideIndex = -1; // For presentation mode
+    let editingSceneIndex = null; // For story scene editing
+    let loadingMapController = null; // To abort previous map loads
 
     // --- Base layers ---
     const esriImageryLayer = new ol.layer.Tile({
@@ -558,53 +734,47 @@
       source: researchSource,
       zIndex: 20,
       imageRatio: 2,
-      style: (() => {
-        const stroke = new ol.style.Stroke({ color: '#2563eb', width: 2 });
-        const fill   = new ol.style.Fill({ color: 'rgba(37,99,235,0.15)' });
+      style: (feature) => {
+        if (feature.get('hidden')) {
+          return null; // Don't render hidden features
+        }
+        const color = feature.get('color') || '#2563eb';
+        const type = feature.getGeometry().getType();
+        const label = feature.get('label') || '';
+        
+        const stroke = new ol.style.Stroke({ color: color, width: 2 });
+        const fill = new ol.style.Fill({ color: color.slice(0, 7) + '26' }); // Add 15% alpha
         const pointBase = new ol.style.Style({
           image: new ol.style.Circle({
             radius: 5,
-            fill: new ol.style.Fill({ color: '#2563eb' }),
+            fill: new ol.style.Fill({ color: color }),
             stroke: new ol.style.Stroke({ color: '#ffffff', width: 2 })
           })
         });
         const lineBase = new ol.style.Style({ stroke });
         const polyBase = new ol.style.Style({ stroke, fill });
-        const cache = new Map(); // key = `${type}|${label}`
 
-        function labelStyle(text, poly) {
-          return new ol.style.Style({
-            geometry: poly ? (f) => f.getGeometry().getInteriorPoint() : undefined,
+        let styles;
+        if (type === 'Point') styles = [pointBase];
+        else if (type.includes('Line')) styles = [lineBase];
+        else styles = [polyBase];
+
+        if (label) {
+          const isPoly = type.includes('Polygon');
+          styles.push(new ol.style.Style({
+            geometry: isPoly ? (f) => f.getGeometry().getInteriorPoint() : undefined,
             text: new ol.style.Text({
-              text,
+              text: label,
               font: '12px system-ui, Arial',
               fill: new ol.style.Fill({ color: '#111827' }),
               stroke: new ol.style.Stroke({ color: 'rgba(255,255,255,0.9)', width: 3 }),
-              offsetY: poly ? 0 : -12,
+              offsetY: isPoly ? 0 : -12,
               overflow: true
             })
-          });
+          }));
         }
-
-        return (feature) => {
-          const type  = feature.getGeometry().getType();
-          const label = feature.get('label') || '';
-          if (!label) {
-            if (type === 'Point') return [pointBase];
-            if (type.includes('Line')) return [lineBase];
-            return [polyBase];
-          }
-          const key = `${type}|${label}`;
-          let styles = cache.get(key);
-          if (!styles) {
-            if (type === 'Point') styles = [pointBase, labelStyle(label, false)];
-            else if (type.includes('Line')) styles = [lineBase];
-            else styles = [polyBase, labelStyle(label, true)];
-            cache.set(key, styles);
-          }
-          return styles;
-        };
-      })(),
+        return styles;
+      },
       properties: { 'name': 'research' }
     });
 
@@ -680,10 +850,12 @@
     const closeMeta = document.getElementById('closeMeta');
     const tabControl = document.getElementById('tabControl');
     const tabResearch = document.getElementById('tabResearch');
+    const tabStory = document.getElementById('tabStory');
     const tabSearch = document.getElementById('tabSearch');
     const tabMore = document.getElementById('tabMore');
     const panelControl = document.getElementById('panelControl');
     const panelResearch = document.getElementById('panelResearch');
+    const panelStory = document.getElementById('panelStory');
     const panelSearch = document.getElementById('panelSearch');
     const panelMore = document.getElementById('panelMore');
     const btnPoint = document.getElementById('btnPoint');
@@ -715,6 +887,45 @@
     const coordValue = document.getElementById('coordValue');
     const coordCopy  = document.getElementById('coordCopy');
     const coordClose = document.getElementById('coordClose');
+    // Annotation Modal UI elements
+    const annoModal = document.getElementById('annoModal');
+    const closeAnnoModalBtn = document.getElementById('closeAnnoModal');
+    const annoTitle = document.getElementById('annoTitle');
+    const annoLabelInput = document.getElementById('annoLabelInput');
+    const annoDetailsInput = document.getElementById('annoDetailsInput');
+    const annoColorInput = document.getElementById('annoColorInput');
+    const annoImgCurrentInput = document.getElementById('annoImgCurrentInput');
+    const annoImgPastInput = document.getElementById('annoImgPastInput');
+    const annoImageViewer = document.getElementById('annoImageViewer');
+    const annoImage = document.getElementById('annoImage');
+    const annoImageStatus = document.getElementById('annoImageStatus');
+    const annoFlipBtn = document.getElementById('annoFlipBtn');
+    const saveAnnoBtn = document.getElementById('saveAnnoBtn');
+    // Popup Overlay UI elements
+    const popupContainer = document.getElementById('popup');
+    const popupContent = document.getElementById('popup-content');
+    const popupCloser = document.getElementById('popup-closer');
+    // Story Mode UI elements
+    const sceneTitleInput = document.getElementById('sceneTitleInput');
+    const sceneDetailsInput = document.getElementById('sceneDetailsInput');
+    const captureSceneBtn = document.getElementById('captureSceneBtn');
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+    const loadStoryBtn = document.getElementById('loadStoryBtn');
+    const loadStoryInput = document.getElementById('loadStoryInput');
+    const presentStoryBtn = document.getElementById('presentStoryBtn');
+    const downloadStoryBtn = document.getElementById('downloadStoryBtn');
+    const storyList = document.getElementById('story-list');
+    const storyPlaceholder = document.getElementById('story-placeholder');
+    // Presentation Mode UI elements
+    const presentationOverlay = document.getElementById('presentation-overlay');
+    const presentationContent = document.getElementById('presentation-content');
+    const presentationTitle = document.getElementById('presentation-title');
+    const presentationDetails = document.getElementById('presentation-details');
+    const presentationNav = document.getElementById('presentation-nav');
+    const presentationCounter = document.getElementById('presentation-counter');
+    const presentationPrev = document.getElementById('presentation-prev');
+    const presentationNext = document.getElementById('presentation-next');
+    const presentationExit = document.getElementById('presentation-exit');
 
     // --- Bottom bar resizer ---
     (function(){
@@ -817,8 +1028,8 @@
     let lastTabClicked = null;
     function setDivider(text){ if (dividerLabel) dividerLabel.textContent = text; }
     function showTab(panelToShow, tabToShow, label) {
-        [panelControl, panelResearch, panelSearch, panelMore].forEach(p => p.classList.remove('active'));
-        [tabControl, tabResearch, tabSearch, tabMore].forEach(t => t.classList.remove('active'));
+        [panelControl, panelResearch, panelStory, panelSearch, panelMore].forEach(p => p.classList.remove('active'));
+        [tabControl, tabResearch, tabStory, tabSearch, tabMore].forEach(t => t.classList.remove('active'));
         if (panelToShow) panelToShow.classList.add('active');
         if (tabToShow) tabToShow.classList.add('active');
         if (typeof setActiveTool === 'function') setActiveTool('none');
@@ -845,6 +1056,7 @@
     }
     tabControl.addEventListener('click', handleTabClick('control', () => showTab(panelControl, tabControl, 'Control')));
     tabResearch.addEventListener('click', handleTabClick('research', () => showTab(panelResearch, tabResearch, 'Research')));
+    tabStory.addEventListener('click', handleTabClick('story', () => showTab(panelStory, tabStory, 'Story')));
     tabSearch.addEventListener('click', handleTabClick('search', () => showTab(panelSearch, tabSearch, 'Search')));
     tabMore.addEventListener('click', handleTabClick('more', () => showTab(panelMore, tabMore, 'More')));
     showTab(panelControl, tabControl, 'Control'); // Initial state
@@ -852,7 +1064,16 @@
     // Load Allmaps overlay by ID (using the Allmaps Plugin)
     async function loadAllmaps(id) {
       if (!id) return;
+
+      // Abort any previous loading operation
+      if (loadingMapController) {
+        loadingMapController.abort();
+      }
+      loadingMapController = new AbortController();
+      const { signal } = loadingMapController;
+
       currentMapId = null;
+      loadedOverlayId = null;
       warpedMapLayer.clear();
       footprintSource.clear();
       if (loader) loader.style.display = 'block';
@@ -866,19 +1087,27 @@
       if(metaLinkWrap) metaLinkWrap.innerHTML = `<a class="link" href="${annotationUrl}" target="_blank" rel="noreferrer">${annotationUrl}</a>`;
 
       try {
-        const response = await fetch(annotationUrl);
+        const response = await fetch(annotationUrl, { signal });
         if (!response.ok) throw new Error(`Annotation not found (HTTP ${response.status})`);
         const annotation = await response.json();
 
+        // After fetching, check if we've been aborted before the heavy part
+        if (signal.aborted) return;
+
         const mapIds = await warpedMapLayer.addGeoreferenceAnnotation(annotation);
+
+        // After adding, check again. This is the most important check.
+        if (signal.aborted) return;
+
         if (!mapIds || mapIds.length === 0 || mapIds[0] instanceof Error) {
             throw mapIds[0] || new Error('Failed to add map to layer.');
         }
         currentMapId = mapIds[0];
+        loadedOverlayId = id; // Store the ID used to load
 
         const extent = warpedMapLayer.getExtent();
+
         if (extent && !ol.extent.isEmpty(extent)) {
-            // map.getView().fit(extent, { padding: [80, 20, 20, 20], duration: 500, maxZoom: 18 }); // <-- REMOVE THIS LINE
             const footprintFeature = new ol.Feature(ol.geom.Polygon.fromExtent(extent));
             footprintSource.addFeature(footprintFeature);
         }
@@ -890,15 +1119,21 @@
         const opacity = parseFloat(opacityRange.value);
         warpedMapLayer.setMapOpacity(currentMapId, opacity);
       } catch (err) {
+        if (err.name === 'AbortError') {
+          console.log(`Load for ${id} was aborted.`);
+          return; // Don't show an error message for aborted requests
+        }
         console.error(err);
         if (statusEl) {
           statusEl.textContent = `Error: ${err.message}`;
           statusEl.className = 'small error';
         }
-        warpedMapLayer.clear();
-        footprintSource.clear();
       } finally {
-        if (loader) loader.style.display = 'none';
+        // Only hide loader if this was the last request that wasn't aborted.
+        if (!signal.aborted) {
+            if (loader) loader.style.display = 'none';
+            loadingMapController = null;
+        }
       }
     }
     
@@ -943,6 +1178,7 @@
     function setMode(mode) {
       stopDrag();
       currentMode = mode;
+      viewModeSel.value = mode;
       lockRotation(mode !== 'overlay');
       const currentOpacity = parseFloat(opacityRange.value);
       if (currentMapId) {
@@ -1057,12 +1293,20 @@
             const t = f.getGeometry().getType();
             const label = f.get('label') || '';
             const metric = metricForFeature(f);
-            html += `<tr data-id="${id}">`
+            const isHidden = f.get('hidden');
+            const rowClass = isHidden ? 'class="hidden-row"' : '';
+            const hideText = isHidden ? 'Show' : 'Hide';
+            html += `<tr data-id="${id}" ${rowClass}>`
                   + `<td>${id}</td>`
                   + `<td>${t.replace('LineString','Line')}</td>`
-                  + `<td><input type="text" class="anno-label" value="${label.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}" /></td>`
+                  + `<td>${label.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</td>`
                   + `<td>${metric}</td>`
-                  + `<td><button class="anno-zoom">Zoom</button> <button class="anno-del">Delete</button></td>`
+                  + `<td>`
+                  + `<button class="anno-action anno-zoom">Zoom</button> `
+                  + `<button class="anno-action anno-edit">Edit</button> `
+                  + `<button class="anno-action anno-hide">${hideText}</button> `
+                  + `<button class="anno-action anno-del">Delete</button>`
+                  + `</td>`
                   + `</tr>`;
         }
         annoTbody.innerHTML = html || '<tr><td colspan="5" class="muted">No annotations yet.</td></tr>';
@@ -1070,15 +1314,17 @@
             const id = row.getAttribute('data-id');
             const f = researchSource.getFeatureById(id);
             if (!f) return;
-            const input = row.querySelector('input.anno-label');
-            if (input) input.addEventListener('input', () => { f.set('label', input.value); researchLayer.changed(); });
-            const btnZ = row.querySelector('button.anno-zoom');
-            if (btnZ) btnZ.addEventListener('click', () => {
+            row.querySelector('.anno-zoom').addEventListener('click', () => {
                 const ext = f.getGeometry().getExtent();
                 map.getView().fit(ext, { padding:[80,20,20,20], duration: 300, maxZoom: 18 });
             });
-            const btnD = row.querySelector('button.anno-del');
-            if (btnD) btnD.addEventListener('click', () => { researchSource.removeFeature(f); });
+            row.querySelector('.anno-edit').addEventListener('click', () => openAnnoModal(f));
+            row.querySelector('.anno-hide').addEventListener('click', () => {
+                f.set('hidden', !f.get('hidden'));
+                researchLayer.changed();
+                refreshAnnoTable();
+            });
+            row.querySelector('.anno-del').addEventListener('click', () => { researchSource.removeFeature(f); });
         });
     }
     function cleanupTool(){
@@ -1103,7 +1349,17 @@
             keyDownCancel = (e) => { if (e.key === 'Escape') { e.preventDefault(); try{ draw.abortDrawing(); }catch(_){} } };
             document.addEventListener('keydown', keyDownCancel);
         }
-        draw.on('drawend', (e) => { getOrAssignId(e.feature); refreshAnnoTable(); });
+        draw.on('drawend', (e) => {
+          getOrAssignId(e.feature);
+          e.feature.set('details', '');
+          e.feature.set('color', '#2563eb');
+          e.feature.set('img_past', '');
+          e.feature.set('img_current', '');
+          e.feature.set('hidden', false);
+          refreshAnnoTable();
+          openAnnoModal(e.feature);
+          setActiveTool('none'); // Exit drawing mode after one shape
+        });
     }
     if (btnPoint) btnPoint.addEventListener('click', () => setActiveTool(btnPoint.classList.contains('active') ? 'none' : 'point'));
     if (btnLine)  btnLine .addEventListener('click', () => setActiveTool(btnLine .classList.contains('active') ? 'none' : 'line'));
@@ -1112,6 +1368,399 @@
     if (researchClear) researchClear.addEventListener('click', () => { researchSource.clear(); });
     setActiveTool('none');
     refreshAnnoTable();
+
+    // --- Annotation Modal Logic ---
+    function openAnnoModal(feature) {
+      if (!feature) return;
+      selectedFeatureId = feature.getId();
+      annoTitle.textContent = `Edit Annotation (${selectedFeatureId})`;
+      annoLabelInput.value = feature.get('label') || '';
+      annoDetailsInput.value = feature.get('details') || '';
+      annoColorInput.value = feature.get('color') || '#2563eb';
+      annoImgCurrentInput.value = feature.get('img_current') || '';
+      annoImgPastInput.value = feature.get('img_past') || '';
+      
+      updateImageViewer(feature);
+
+      annoModal.classList.add('show');
+    }
+
+    function closeAnnoModal() {
+      annoModal.classList.remove('show');
+      selectedFeatureId = null;
+    }
+
+    function updateImageViewer(feature) {
+        const currentUrl = feature.get('img_current');
+        const pastUrl = feature.get('img_past');
+        
+        const hasCurrent = currentUrl && currentUrl.trim() !== '';
+        const hasPast = pastUrl && pastUrl.trim() !== '';
+
+        if (hasCurrent) {
+            annoImage.src = currentUrl;
+            annoImage.style.display = 'block';
+            annoImageStatus.style.display = 'none';
+            annoImage.dataset.state = 'current';
+        } else if (hasPast) {
+            annoImage.src = pastUrl;
+            annoImage.style.display = 'block';
+            annoImageStatus.style.display = 'none';
+            annoImage.dataset.state = 'past';
+        } else {
+            annoImage.style.display = 'none';
+            annoImageStatus.style.display = 'block';
+        }
+
+        if (hasCurrent && hasPast) {
+            annoFlipBtn.style.display = 'block';
+            annoFlipBtn.textContent = 'Flip to Past Image';
+        } else {
+            annoFlipBtn.style.display = 'none';
+        }
+    }
+
+    annoFlipBtn.addEventListener('click', () => {
+        const feature = researchSource.getFeatureById(selectedFeatureId);
+        if (!feature) return;
+
+        const currentState = annoImage.dataset.state;
+        if (currentState === 'current') {
+            annoImage.src = feature.get('img_past');
+            annoImage.dataset.state = 'past';
+            annoFlipBtn.textContent = 'Flip to Current Image';
+        } else {
+            annoImage.src = feature.get('img_current');
+            annoImage.dataset.state = 'current';
+            annoFlipBtn.textContent = 'Flip to Past Image';
+        }
+    });
+
+    saveAnnoBtn.addEventListener('click', () => {
+      if (!selectedFeatureId) return;
+      const feature = researchSource.getFeatureById(selectedFeatureId);
+      if (!feature) return;
+
+      feature.set('label', annoLabelInput.value);
+      feature.set('details', annoDetailsInput.value);
+      feature.set('color', annoColorInput.value);
+      feature.set('img_current', annoImgCurrentInput.value);
+      feature.set('img_past', annoImgPastInput.value);
+      
+      researchLayer.changed(); // Force redraw with new style/label
+      refreshAnnoTable();
+      closeAnnoModal();
+    });
+
+    closeAnnoModalBtn.addEventListener('click', closeAnnoModal);
+    annoModal.addEventListener('click', (e) => { if (e.target === annoModal) closeAnnoModal(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAnnoModal(); });
+
+    // --- Popup Overlay Logic ---
+    const popupOverlay = new ol.Overlay({
+        element: popupContainer,
+        autoPan: { animation: { duration: 250 } }
+    });
+    map.addOverlay(popupOverlay);
+
+    popupCloser.onclick = function() {
+        popupOverlay.setPosition(undefined);
+        popupCloser.blur();
+        return false;
+    };
+
+    // Handle clicks on map to open read-only popup
+    map.on('click', (evt) => {
+      if (draw) return; // Don't show popup while drawing
+      
+      const feature = map.forEachFeatureAtPixel(evt.pixel, (f, layer) => {
+        if (layer === researchLayer) return f;
+      });
+
+      if (feature && !feature.get('hidden')) {
+        const coordinate = evt.coordinate;
+        const label = feature.get('label') || 'No Name';
+        const details = feature.get('details') || 'No details provided.';
+        const img = feature.get('img_current') || feature.get('img_past');
+
+        let content = `<h4>${escHtml(label)}</h4><p>${escHtml(details)}</p>`;
+        if (img) {
+            content += `<img src="${escHtml(img)}" alt="${escHtml(label)}">`;
+        }
+        popupContent.innerHTML = content;
+        popupOverlay.setPosition(coordinate);
+      } else {
+        popupOverlay.setPosition(undefined);
+      }
+    });
+
+    // --- Story Mode Logic ---
+    async function applyScene(scene) {
+        if (!scene) return;
+
+        // Set basemap
+        setBasemap(scene.basemap);
+        basemapSel.value = scene.basemap;
+
+        // Handle overlay map loading/clearing
+        if (scene.overlayId && scene.overlayId !== loadedOverlayId) {
+            await loadAllmaps(scene.overlayId);
+        } else if (!scene.overlayId && (currentMapId || loadedOverlayId)) {
+            warpedMapLayer.clear();
+            currentMapId = null;
+            loadedOverlayId = null;
+        }
+
+        // Now that the correct map is loaded (or cleared), apply its specific settings
+        if (scene.overlayId && currentMapId) {
+            mapSelector.value = scene.overlayId;
+            opacityRange.value = scene.opacity;
+            opLabel.textContent = `${Math.round(scene.opacity * 100)}%`;
+            warpedMapLayer.setMapOpacity(currentMapId, scene.opacity);
+        } else {
+            mapSelector.value = '';
+        }
+
+        // Restore view mode first, as it may affect rotation
+        sideRatio = scene.sideRatio || 0.5;
+        lensRadius = scene.lensRadius || 150;
+        setMode(scene.viewMode || 'overlay');
+
+        // Animate the view to the new state for a dynamic transition
+        const animationOptions = {
+            center: scene.center,
+            zoom: scene.zoom,
+            duration: 1200, // A bit longer for a more noticeable flight
+            easing: ol.easing.inAndOut // Smoother acceleration/deceleration
+        };
+        // Only apply rotation if the view mode allows it
+        if ((scene.viewMode || 'overlay') === 'overlay') {
+            animationOptions.rotation = scene.rotation || 0;
+        }
+        map.getView().animate(animationOptions);
+
+        // Restore feature visibility
+        researchSource.getFeatures().forEach(f => {
+            const isVisible = scene.visibleFeatures.includes(f.getId());
+            f.set('hidden', !isVisible);
+        });
+        researchLayer.changed();
+        refreshAnnoTable();
+    }
+
+    function renderStoryPanel() {
+        storyList.innerHTML = '';
+        if (story.length === 0) {
+            storyList.appendChild(storyPlaceholder);
+            storyPlaceholder.style.display = 'list-item';
+            downloadStoryBtn.disabled = true;
+            presentStoryBtn.disabled = true;
+            return;
+        }
+        storyPlaceholder.style.display = 'none';
+        downloadStoryBtn.disabled = false;
+        presentStoryBtn.disabled = false;
+
+        story.forEach((scene, index) => {
+            const li = document.createElement('li');
+            const title = scene.title || `Scene ${index + 1}`;
+            li.innerHTML = `<span class="scene-label">${escHtml(title)}</span>`;
+            
+            const goToBtn = document.createElement('button');
+            goToBtn.textContent = 'Go to';
+            goToBtn.className = 'btn-sm btn-blue';
+            goToBtn.onclick = () => applyScene(scene);
+
+            const delBtn = document.createElement('button');
+            delBtn.textContent = 'Delete';
+            delBtn.className = 'btn-sm btn-red';
+            delBtn.onclick = () => {
+                if (editingSceneIndex === index) {
+                    exitEditMode(); // Exit edit mode if deleting the edited scene
+                }
+                story.splice(index, 1);
+                renderStoryPanel();
+            };
+
+            const editBtn = document.createElement('button');
+            editBtn.textContent = 'Edit';
+            editBtn.className = 'btn-sm btn-green';
+            editBtn.onclick = () => enterEditMode(index);
+
+            li.appendChild(goToBtn);
+            li.appendChild(editBtn);
+            li.appendChild(delBtn);
+            storyList.appendChild(li);
+        });
+    }
+
+    captureSceneBtn.addEventListener('click', () => {
+        const view = map.getView();
+        const visibleFeatures = researchSource.getFeatures()
+            .filter(f => !f.get('hidden'))
+            .map(f => f.getId());
+
+        const scene = {
+            title: sceneTitleInput.value.trim(),
+            details: sceneDetailsInput.value.trim(),
+            center: view.getCenter(),
+            zoom: view.getZoom(),
+            rotation: view.getRotation(), // Capture rotation
+            basemap: basemapSel.value,
+            overlayId: loadedOverlayId,
+            opacity: parseFloat(opacityRange.value),
+            viewMode: currentMode,
+            sideRatio: sideRatio,
+            lensRadius: lensRadius,
+            visibleFeatures: visibleFeatures
+        };
+
+        if (editingSceneIndex !== null) {
+            // Update existing scene
+            story[editingSceneIndex] = scene;
+            exitEditMode();
+        } else {
+            // Add new scene
+            story.push(scene);
+            // Clear inputs after capture
+            sceneTitleInput.value = '';
+            sceneDetailsInput.value = '';
+        }
+        
+        renderStoryPanel();
+    });
+
+    function enterEditMode(index) {
+        const scene = story[index];
+        if (!scene) return;
+
+        editingSceneIndex = index;
+        
+        applyScene(scene); // Move map to the scene's view
+
+        sceneTitleInput.value = scene.title || '';
+        sceneDetailsInput.value = scene.details || '';
+
+        captureSceneBtn.textContent = 'Save Changes';
+        captureSceneBtn.classList.remove('btn-blue');
+        captureSceneBtn.classList.add('btn-green');
+        cancelEditBtn.style.display = 'inline-block';
+    }
+
+    function exitEditMode() {
+        editingSceneIndex = null;
+        
+        sceneTitleInput.value = '';
+        sceneDetailsInput.value = '';
+
+        captureSceneBtn.textContent = 'Capture Scene';
+        captureSceneBtn.classList.remove('btn-green');
+        captureSceneBtn.classList.add('btn-blue');
+        cancelEditBtn.style.display = 'none';
+    }
+    cancelEditBtn.addEventListener('click', exitEditMode);
+
+    downloadStoryBtn.addEventListener('click', () => {
+        if (story.length === 0) return;
+
+        const geoJsonFormat = new ol.format.GeoJSON();
+        const allFeatures = researchSource.getFeatures();
+        // Convert all features to a GeoJSON FeatureCollection object
+        const featuresGeoJson = geoJsonFormat.writeFeaturesObject(allFeatures, {
+            featureProjection: 'EPSG:3857' // The map's projection
+        });
+
+        // Create a new story object that includes both features and scenes
+        const storyData = {
+            features: featuresGeoJson,
+            scenes: story
+        };
+
+        const storyJson = JSON.stringify(storyData, null, 2);
+        const blob = new Blob([storyJson], { type: 'application/json;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const ts = new Date().toISOString().replace(/[:.]/g, '-');
+        a.download = `story-${ts}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+
+    loadStoryBtn.addEventListener('click', () => loadStoryInput.click());
+    loadStoryInput.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            try {
+                const loadedData = JSON.parse(String(reader.result || '{}'));
+                // Check for the new format with embedded features
+                if (loadedData && loadedData.features && Array.isArray(loadedData.scenes)) {
+                    researchSource.clear(); // Clear existing annotations
+                    const geoJsonFormat = new ol.format.GeoJSON();
+                    const features = geoJsonFormat.readFeatures(loadedData.features, { featureProjection: 'EPSG:3857' });
+                    researchSource.addFeatures(features); // Add the new features
+                    story = loadedData.scenes;
+                    renderStoryPanel();
+                } else if (Array.isArray(loadedData)) { // Handle old format for backwards compatibility
+                    story = loadedData;
+                    renderStoryPanel();
+                    alert('Story loaded using old format. Annotations were not included and must be loaded separately.');
+                } else {
+                    alert('Invalid story file format. Expected a JSON file with "scenes" and "features".');
+                }
+            } catch (err) {
+                console.error("Error loading story:", err);
+                alert('Could not parse story file. Make sure it is a valid JSON file.');
+            }
+            loadStoryInput.value = '';
+        };
+        reader.readAsText(file);
+    });
+
+    // --- Presentation Mode Logic ---
+    async function showSlide(index) {
+        if (index < 0 || index >= story.length) return;
+        currentSlideIndex = index;
+        const scene = story[index];
+        
+        await applyScene(scene);
+        
+        presentationTitle.textContent = scene.title || `Scene ${index + 1}`;
+        presentationDetails.textContent = scene.details || '';
+        presentationCounter.textContent = `${index + 1} / ${story.length}`;
+        
+        presentationPrev.disabled = index === 0;
+        presentationNext.disabled = index === story.length - 1;
+    }
+
+    function startPresentation() {
+        if (story.length === 0) return;
+        presentationOverlay.style.display = 'flex';
+        document.querySelector('.bottombar').style.display = 'none';
+        showSlide(0);
+    }
+
+    function exitPresentation() {
+        presentationOverlay.style.display = 'none';
+        document.querySelector('.bottombar').style.display = 'flex';
+        currentSlideIndex = -1;
+    }
+
+    presentStoryBtn.addEventListener('click', startPresentation);
+    presentationExit.addEventListener('click', exitPresentation);
+    presentationNext.addEventListener('click', () => showSlide(currentSlideIndex + 1));
+    presentationPrev.addEventListener('click', () => showSlide(currentSlideIndex - 1));
+    document.addEventListener('keydown', (e) => {
+        if (presentationOverlay.style.display !== 'flex') return;
+        if (e.key === 'ArrowRight') showSlide(currentSlideIndex + 1);
+        else if (e.key === 'ArrowLeft') showSlide(currentSlideIndex - 1);
+        else if (e.key === 'Escape') exitPresentation();
+    });
+
 
     // Nominatim Search
     function escHtml(s){ return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
@@ -1241,6 +1890,7 @@
 
     // CSV export / import for annotations
     const wktFormat = new ol.format.WKT();
+    const geoJsonFormat = new ol.format.GeoJSON();
     function csvEscape(val) {
         if (val == null) return '';
         const s = String(val);
@@ -1252,11 +1902,16 @@
         const geom = f.getGeometry();
         const type = geom.getType();
         const label = f.get('label') || '';
-        const wkt = wktFormat.writeGeometry(geom); // EPSG:3857
-        return [id, type, label, wkt].map(csvEscape).join(',');
+        const details = f.get('details') || '';
+        const color = f.get('color') || '#2563eb';
+        const img_current = f.get('img_current') || '';
+        const img_past = f.get('img_past') || '';
+        const geojsonGeom = geoJsonFormat.writeGeometryObject(geom, { featureProjection: 'EPSG:3857' });
+        const geojson = JSON.stringify(geojsonGeom);
+        return [id, type, label, details, color, img_current, img_past, geojson].map(csvEscape).join(',');
     }
     function downloadCsv() {
-        const header = 'id,type,label,wkt';
+        const header = 'id,type,label,details,color,img_current,img_past,geojson';
         const rows = researchSource.getFeatures().map(featureToCsvRow);
         const csv = [header].concat(rows).join('\r\n');
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -1290,25 +1945,66 @@
     function importCsv(text) {
         const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
         if (!lines.length) return 0;
-        let start = 0;
-        const head = parseCsvLine(lines[0]).map(h => h.trim().toLowerCase());
-        if (head.join(',') === 'id,type,label,wkt') start = 1;
+        
+        const headerLine = lines.shift();
+        const header = parseCsvLine(headerLine).map(h => h.trim().toLowerCase());
+        
+        const geojsonIndex = header.indexOf('geojson');
+        const wktIndex = header.indexOf('wkt');
+
+        if (geojsonIndex === -1 && wktIndex === -1) {
+            alert("Import failed: CSV file must contain a 'geojson' or 'wkt' column for geometry data.");
+            console.error("CSV must have a 'geojson' or 'wkt' column.");
+            return 0;
+        }
+
+        const isWkt = geojsonIndex === -1;
+        const geomIndex = isWkt ? wktIndex : geojsonIndex;
+
+        const colMap = {
+            id: header.indexOf('id'),
+            type: header.indexOf('type'),
+            label: header.indexOf('label'),
+            details: header.indexOf('details'),
+            color: header.indexOf('color'),
+            img_current: header.indexOf('img_current'),
+            img_past: header.indexOf('img_past'),
+        };
+
         let count = 0;
-        for (let i = start; i < lines.length; i++) {
-            const cols = parseCsvLine(lines[i]);
-            if (cols.length < 4) continue;
-            const [idRaw, type, label, wkt] = cols;
+        for (const line of lines) {
+            const cols = parseCsvLine(line);
+            const geomStr = cols[geomIndex];
+            if (!geomStr) continue;
+
             let geom;
-            try { geom = wktFormat.readGeometry(wkt); } catch (_) { continue; }
+            try {
+                if (isWkt) {
+                    geom = wktFormat.readGeometry(geomStr);
+                } else {
+                    const geojsonGeom = JSON.parse(geomStr);
+                    geom = geoJsonFormat.readGeometry(geojsonGeom, { featureProjection: 'EPSG:3857' });
+                }
+            } catch (_) { continue; }
+            
             const feat = new ol.Feature({ geometry: geom });
-            if (label) feat.set('label', label);
-            let id = idRaw && idRaw.trim() ? idRaw.trim() : null;
+
+            for (const prop in colMap) {
+                if (colMap[prop] !== -1 && cols[colMap[prop]]) {
+                    if (prop !== 'id') {
+                        feat.set(prop, cols[colMap[prop]]);
+                    }
+                }
+            }
+
+            let id = (colMap.id !== -1 && cols[colMap.id]) ? cols[colMap.id].trim() : null;
             if (id && researchSource.getFeatureById(id)) {
                 let k = 1; let nid = id + '-' + k;
                 while (researchSource.getFeatureById(nid)) { k++; nid = id + '-' + k; }
                 id = nid;
             }
             if (id) feat.setId(id); else getOrAssignId(feat);
+
             researchSource.addFeature(feat);
             count++;
         }
