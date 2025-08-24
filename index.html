@@ -7,128 +7,37 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v7.5.2/ol.css">
   <script src="https://cdn.jsdelivr.net/npm/ol@v7.5.2/dist/ol.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@allmaps/openlayers/dist/bundled/allmaps-openlayers-8.umd.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* Map logo */
-    .map-logo { position: absolute; top: 10px; left: 10px; z-index: 1100; width: 60px; height: auto; border-radius: 8px; background: rgba(255,255,255,0.75); padding: 4px 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); pointer-events: none; }
-    /* Reposition OpenLayers controls: zoom at top-right, rotate (north-up) below it (closer together) */
-    .ol-zoom { top: 10px; right: 10px; left: auto; display: flex; flex-direction: column; gap: var(--ctlGap); z-index: 1100; }
-    .ol-rotate { top: calc(10px + (var(--ctlSz) * 2) + var(--ctlGap) + 8px); right: 10px; left: auto; z-index: 1100; }
-    /* Zoom & north-up button sizes */
-    .ol-zoom button, .ol-rotate button { width: var(--ctlSz); height: var(--ctlSz); font-size: 16px; border-radius: 8px; }
-    .ol-rotate button .ol-compass { font-size: 12px; }
-    html, body { height: 100%; margin: 0; }
-    :root { --vh: 100vh; --tabH: calc(var(--vh) / 3); }
-    @supports (height: 100dvh) { :root { --vh: 100dvh; } }
-    :root { --ctlSz: 34px; --ctlGap: 4px; }
-    #map { position: relative; width: 100%; height: 100%; }
-    .panel {
-      position: absolute; top: 10px; left: 10px; z-index: 1000;
-      background: rgba(255,255,255,0.95); padding: 12px 14px; border-radius: 12px;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.15); font-family: system-ui, Arial, sans-serif; min-width: 300px;
-    }
-    .row { display: grid; grid-template-columns: 1fr; gap: 8px; margin-bottom: 10px; }
-    label { font-size: 12px; color: #333; }
-    select, input[type="text"], button, textarea {
-      font-size: 14px; padding: 8px 10px; border-radius: 8px; border: 1px solid #ccc; outline: none;
-    }
-    /* Prevent mobile zoom on input focus by keeping font-size >=16px */
-    @media (hover:none) and (pointer:coarse) {
-      input[type="text"],
-      input[type="search"],
-      input[type="email"],
-      input[type="tel"],
-      input[type="number"],
-      input[type="password"],
-      textarea,
-      select,
-      button {
-        font-size: 16px !important;
-      }
-    }
-    button { cursor: pointer; background: #111827; color: #fff; border: none; }
-    button:disabled { opacity: 0.5; cursor: default; }
-    .small { font-size: 12px; color: #444; }
-    .inline { display: flex; gap: 8px; align-items: center; }
-    .w-100 { width: 100%; }
-    .muted { color: #666; }
-    .pill {
-      display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; background: #f3f4f6; color: #111827;
-    }
-    .error { color: #b91c1c; }
-    .ok { color: #065f46; }
-    .link { color: #2563eb; text-decoration: none; }
-    .kvgrid { display: grid; grid-template-columns: max-content 1fr; gap: 6px 12px; align-items: start; }
-    .kv-key { font-weight: 600; color: #334155; white-space: nowrap; }
-    .kv-val { color: #111827; overflow-wrap: anywhere; }
-    .badge { display:inline-block; padding:1px 6px; border-radius:999px; background:#eef2ff; color:#3730a3; font-size:11px; }
-    .bottombar {
-      position: absolute; left: 0; right: 0; bottom: 0; z-index: 1000;
-      background: rgba(255,255,255,0.95); border-radius: 12px 12px 0 0; padding: 4px 6px calc(4px + env(safe-area-inset-bottom, 0px));
-      box-shadow: 0 6px 18px rgba(0,0,0,0.15);
-      /* stack: tabs (fixed) + active panel (scroll) + credits (fixed) */
-      display: flex; flex-direction: column; gap: 6px; align-items: stretch;
-      height: var(--barH, var(--tabH, 160px)); max-height: 90vh; min-height: var(--barMin, 110px); overflow: hidden; box-sizing: border-box;
-      /* Force compositing/painting on mobile Safari to avoid transparent-on-load bug */
-      background-color: rgba(255,255,255,0.97); /* explicit color layer */
-      -webkit-transform: translateZ(0);
-      transform: translateZ(0);
-      backface-visibility: hidden;
-      will-change: transform;
-      isolation: isolate; /* new stacking context above map */
-      -webkit-overflow-scrolling: touch; /* smooth panel scroll on iOS */
-    }
-    /* collapse/expand bottom bar — keep tabs visible for reopen */
-    .bottombar.collapsed {
-      height: auto;
-      min-height: 0;
-      padding-top: 2px;
-      padding-bottom: calc(2px + env(safe-area-inset-bottom, 0px));
-    }
-    .bottombar.collapsed .bar-resizer,
-    .bottombar.collapsed .section-sep,
-    .bottombar.collapsed .tab-panel,
-    .bottombar.collapsed .creditbar { display: none !important; }
-    /* ensure tabs remain visible and clickable when collapsed */
-    .bottombar.collapsed .tabs { display: flex !important; }
-    .creditbar { display:flex; align-items:center; gap:8px; }
-    /* drag handle to resize bottom bar */
-    .bar-resizer { flex: 0 0 auto; height: 16px; cursor: ns-resize; display: flex; align-items: center; justify-content: center; touch-action: none; }
-    .bar-resizer .grip { width: 56px; height: 5px; border-radius: 999px; background: #d1d5db; }
-    .bar-resizer:hover .grip { background: #9ca3af; }
-    .bottombar .lbl { font-size: 12px; color: #333; margin-right: 6px; }
-    .bottombar .spacer { flex: 1; }
-    /* Bigger action buttons */
-    .btn-lg { font-size: 15px; padding: 10px 16px; border-radius: 10px; }
-    .btn-green { background:#10b981; }
-    .btn-green:hover { background:#059669; }
-    .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: none; align-items: center; justify-content: center; z-index: 2000; }
-    .modal.show { display: flex; }
-    .modal .content { background: #fff; max-width: 720px; width: min(720px, 92vw); max-height: 80vh; overflow: auto; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); padding: 16px 18px; }
-    .modal .hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-    .modal .close { background: transparent; border: none; font-size: 20px; line-height: 1; cursor: pointer; padding: 6px; }
+    /* Custom OpenLayers Control Positioning */
+    .ol-zoom { top: 1rem !important; right: 1rem !important; left: auto !important; }
+    .ol-rotate { top: calc(1rem + 50px) !important; right: 1rem !important; left: auto !important; }
+    .ol-scale-line { background: rgba(255,255,255,0.7); padding: 2px 6px; border-radius: 6px; }
 
-    /* Loading spinner */
-    .loader {
-      border: 3px solid #f3f4f6; /* tailwind gray-100 */
-      border-top: 3px solid #3b82f6; /* tailwind blue-500 */
-      border-radius: 50%;
-      width: 18px;
-      height: 18px;
-      animation: spin 1s linear infinite;
-      display: none; /* Hidden by default */
+    /* Custom scrollbar for panels */
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+    /* Sidebar collapse styles */
+    #sidebar.collapsed {
+      width: 64px; /* Tailwind w-16 */
     }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+    #sidebar.collapsed .collapsible-content {
+      display: none;
+    }
+    #sidebar.collapsed header .flex {
+      justify-content: center;
+    }
+    #sidebar.collapsed #collapsed-nav {
+      display: flex;
     }
 
-    /* split guides + spyglass */
+    /* For Spyglass/Side-by-Side Dividers and Handles */
     .divider-v { position:absolute; top:0; left:0; width:0; height:0; border-left:2px dashed rgba(0,0,0,0.45); pointer-events:none; z-index:999; display:none; }
     .divider-h { position:absolute; top:0; left:0; width:0; height:0; border-top:2px dashed rgba(0,0,0,0.45); pointer-events:none; z-index:999; display:none; }
     .lens { position: absolute; pointer-events: none; border: 2px solid rgba(0,0,0,0.5); border-radius: 9999px; box-shadow: 0 0 0 2px rgba(255,255,255,0.85) inset; z-index: 999; display: none; cursor: default; }
-    .lens:active { cursor: default; }
-
-    /* drag handles */
     .handle, .lens-handle {
       position: absolute; width: 16px; height: 16px; border-radius: 9999px;
       background: #fff; border: 2px solid rgba(0,0,0,0.55); box-shadow: 0 2px 6px rgba(0,0,0,0.15);
@@ -137,216 +46,23 @@
     .handle-v { cursor: ew-resize; }
     .handle-h { cursor: ns-resize; }
     .lens-handle { cursor: nwse-resize; }
-
-    .range { width: 100%; }
-    /* Tab strip: pill buttons, text-only, small and tight */
-    .tabs { display:flex; align-items:center; gap:6px; padding:2px; margin-bottom:4px; }
-    .tab-btn {
-      position: relative;
-      display: inline-flex; align-items: center; gap: 0;
-      appearance: none; cursor: pointer;
-      font-size: 13px; font-weight: 600; color: #111827;
-      padding: 6px 10px; border-radius: 12px;
-      border: 1px solid #e5e7eb;
-      background: linear-gradient(#ffffff, #f8fafc);
-      box-shadow: 0 1px 0 rgba(0,0,0,0.03), inset 0 -1px 0 rgba(0,0,0,0.02);
-      transition: background .15s ease, box-shadow .15s ease, border-color .15s ease, color .15s ease;
-    }
-    .tab-btn:hover { background: #f3f4f6; border-color:#d1d5db; }
-    .tab-btn:active { transform: translateY(0.5px); }
-    .tab-btn.active { background:#111827; color:#fff; border-color:#111827; box-shadow: 0 2px 6px rgba(0,0,0,0.12) inset; }
-    /* labeled separator under tabs */
-    .section-sep { display:flex; align-items:center; gap:10px; margin:4px 0 8px; }
-    .section-sep::before, .section-sep::after { content:""; flex:1; height:2px; background: linear-gradient(to right, transparent, #cbd5e1, transparent); }
-    .section-sep span { font-size:12px; font-weight:600; color:#111827; background: rgba(255,255,255,0.95); border:1px solid #e5e7eb; border-radius:999px; padding:3px 10px; }
-
-    /* Simplify the tab separator: no label, single line */
-    .section-sep { display:block; height:1px; background:#cbd5e1; margin:6px 0 8px; }
-    .section-sep::before, .section-sep::after { content:none; }
-    .section-sep span { display:none; }
-
-    /* Sticky actions for More tab */
-    #panelMore .sticky-actions { position: sticky; top: 0; z-index: 5; display:flex; gap:10px; align-items:center; justify-content:center; flex-wrap:wrap; padding:8px 0; background: rgba(255,255,255,0.95); border-bottom:1px solid #e5e7eb; backdrop-filter: blur(2px); }
-    /* Pretty pill buttons */
-    .btn-chip { appearance:none; display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:9999px; border:1px solid #d1d5db; background: linear-gradient(#ffffff, #f8fafc); color:#111827; text-decoration:none; font-size:13px; font-weight:600; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
-    .btn-chip:hover { background:#f3f4f6; border-color:#cbd5e1; }
-    .btn-chip:active { transform: translateY(1px); }
-
-    /* colored action buttons */
-    .btn-blue  { background:#2563eb; color:#fff; }
-    .btn-blue:hover  { background:#1d4ed8; }
-    .btn-indigo{ background:#6366f1; color:#fff; }
-    .btn-indigo:hover{ background:#4f46e5; }
-    .btn-red   { background:#ef4444; color:#fff; }
-    .btn-red:hover   { background:#dc2626; }
-    /* Control panel 4-column grid */
-    .control-grid { display:grid; grid-template-columns: max-content 1fr max-content 1fr; grid-auto-rows: min-content; gap: 12px 16px; align-items: end; }
-    .control-grid .inline { min-width: 0; }
-    .control-grid .lbl { align-self: end; margin-right: 0; }
-    .control-grid .span3 { grid-column: 1 / span 3; }
-    .control-grid .right { justify-self: end; align-self: end; }
-    @media (max-width: 1100px) {
-      .control-grid { grid-template-columns: 1fr 1fr; }
-      .control-grid .span3 { grid-column: 1 / -1; }
-      .control-grid .right { justify-self: start; }
-    }
-    @media (max-width: 760px) {
-      :root { --tabH: calc(var(--vh) / 3.8); }
-      /* Mobile: two columns => Label | Selector */
-      .control-grid { grid-template-columns: max-content 1fr; }
-      /* Keep controls compact; make overlay input the same visual width as basemap */
-      .control-grid #basemap,
-      .control-grid #allmapsId { width: min(50vw, 200px); }
-      /* Bigger resizer target on mobile */
-      .bar-resizer { height: 21px; }
-      .bar-resizer .grip { width: 72px; height: 6px; }
-      /* Mobile: split Research toolbar into two lines */
-      .toolbar { flex-wrap: wrap; justify-content: center; }
-      .toolbar .break { display:block; flex-basis:100%; height:0; }
-    }
-    .tab-panel { display:none; width:100%; gap:10px; align-items:stretch; flex-direction:column; flex:1 1 auto; min-height:0; overflow:auto; }
-    .tab-panel.active { display:flex; }
-    /* tool buttons (single active) */
-    .tool-btn { appearance:none; border:1px solid #d1d5db; background:#f8fafc; color:#111827; padding:6px 10px; border-radius:8px; font-size:13px; cursor:pointer; }
-    .tool-btn.active { background:#111827; color:#fff; border-color:#111827; }
-
-    /* Toolbar: desktop = single line (centered); mobile = two lines */
-    .toolbar { display:flex; gap:14px; align-items:center; justify-content:center; flex-wrap:nowrap; }
-    .toolbar .break { display:none; }
-
-    /* annotation table */
-    .tbl { width: 100%; border-collapse: collapse; }
-    .tbl th, .tbl td { border: 1px solid #e5e7eb; padding: 6px 8px; font-size: 12px; }
-    .tbl th { background: #f8fafc; text-align: left; font-weight: 600; }
-    .tbl tr.hidden-row { opacity: 0.5; background: #f9fafb; }
-    .tbl input[type="text"] { width: 100%; padding: 4px 6px; font-size: 12px; border: 1px solid #d1d5db; border-radius: 6px; }
-
-    /* Annotation table action buttons */
-    .tbl td .anno-action {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 4px 8px;
-      font-size: 12px;
-      border-radius: 6px;
-      border: none;
-      min-width: 0;
-      background: none;
-      box-shadow: none;
-      line-height: 1.2;
-      transition: background 0.14s;
-      margin-right: 4px;
-    }
-    .tbl td .anno-zoom { background-color: #111827; color: #fff; }
-    .tbl td .anno-zoom:hover { background-color: #374151; }
-    .tbl td .anno-edit { background-color: #2563eb; color: #fff; }
-    .tbl td .anno-edit:hover { background-color: #1d4ed8; }
-    .tbl td .anno-hide { background-color: #6b7280; color: #fff; }
-    .tbl td .anno-hide:hover { background-color: #4b5563; }
-    .tbl td .anno-del { background-color: #dc2626; color: #fff; }
-    .tbl td .anno-del:hover { background-color: #b91c1c; }
-
-    /* annotation list scroll container */
-    .anno-wrap { width: 100%; margin-top: 8px; flex:1 1 auto; min-height:0; overflow:auto; }
-    /* keep table header visible while scrolling */
-    .tbl thead th { position: sticky; top: 0; background: #f8fafc; z-index: 1; }
-
-    /* search panel */
-    .results-wrap { width: 100%; margin-top: 8px; flex:1 1 auto; min-height:0; overflow:auto; }
-    .results { display: grid; gap: 6px; }
-    .result-item { border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 10px; cursor: pointer; background:#fff; }
-    .result-item:hover { background: #f8fafc; }
-    .result-title { font-size: 13px; color:#111827; font-weight:600; }
-    .result-sub { font-size: 12px; color:#4b5563; }
-    /* cleaner two-column layout for search results */
-    .result-item { display: flex; gap: 12px; align-items: center; }
-    .result-item .col-left { flex: 1; min-width: 0; }
-    .result-item .col-right { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; }
-    .btnAddSearch { padding: 6px 10px; font-size: 12px; border-radius: 8px; }
-
-    /* Results fill the panel; panel scrolls within --tabH */
-    #searchResults { max-height: none; overflow: visible; }
-    #searchResults .result-item { padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
-    /* credit footer inside bottombar */
-    .creditbar { flex: 0 0 auto; border-top: 1px solid #e5e7eb; padding-top: 6px; }
-    .bottombar.collapsed .creditbar { border-top: none; padding-top: 0; }
-    /* right-click coordinate popup */
-    .coordmenu {
-      position: absolute; z-index: 2500; display: none;
-      background: #fff; border: 1px solid #e7e7eb; border-radius: 10px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.18); padding: 10px; min-width: 220px;
-    }
-    .coordmenu .hd { font-weight: 600; font-size: 13px; color:#111827; margin-bottom: 6px; }
-    .coordmenu .val { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12px; color:#111827; background:#f9fafb; border:1px solid #e7e7eb; border-radius:8px; padding:6px 8px; cursor: pointer; user-select: all; }
-    .coordmenu .sub { font-size: 12px; color:#6b7280; margin-top: 6px; }
-    .coordmenu .actions { display:flex; gap:8px; margin-top:8px; }
-    .coordmenu button { padding: 6px 10px; font-size: 12px; border-radius: 8px; background:#111827; color:#fff; border:none; cursor:pointer; }
     
-    /* ===== Compact UI overrides (safe to append at end of <style>) ===== */
-
-    /* Slimmer bottom padding */
-    .bottombar { padding: 0px 0px calc(2px + env(safe-area-inset-bottom, 0px)); }
-
-    /* Tabs: text-only, smaller, tighter spacing */
-    .tabs { display:flex; align-items:center; gap:6px; padding:0 2px; margin-bottom:2px; }
-    .tab-btn { padding:6px 10px; }
-
-    /* Separator tighter */
-    .section-sep { display:block; height:1px; background:#cbd5e1; margin:4px 0 6px; }
-    .section-sep::before, .section-sep::after { content:none; }
-    .section-sep span { display:none; }
-
-    /* Control panel grid: consistent label column + tighter gaps */
-    @media (min-width: 761px) {
-      .control-grid { display:grid; grid-template-columns: 80px 1fr 80px 1fr; grid-auto-rows: min-content; gap:8px 12px; align-items:center; }
+    /* Active tab state styles */
+    .tab-btn-desktop.active {
+      background-color: #e5e7eb; /* gray-200 */
+      color: #1f2937; /* gray-800 */
+      border-bottom: 2px solid #4f46e5; /* indigo-600 */
     }
-    .control-grid .lbl { align-self:center; justify-self:end; margin-right:0; color:#0f172a; font-weight:600; }
-
-    @media (max-width: 760px) {
-      .control-grid { grid-template-columns: 88px 1fr; gap:8px 10px; align-items:center; }
-      .control-grid .inline { min-width: 0; }
-      .control-grid select,
-      .control-grid input[type="text"],
-      .control-grid .w-100 { width: 100%; }
+     .tab-btn-mobile.active {
+      color: #4f46e5; /* indigo-600 */
     }
-
-    /* Inputs/select/buttons padding */
-    select, input[type="text"], button, textarea { font-size:14px; padding:7px 9px; border-radius:8px; border:1px solid #ccc; outline:none; }
-
-    /* Large buttons (Load / Metadata) */
-    .btn-lg { font-size:14px; padding:8px 14px; border-radius:10px; }
-
-    /* Slimmer slider */
-    .range { width:100%; height:22px; }
-    .range::-webkit-slider-runnable-track { height:6px; border-radius:999px; }
-    .range::-webkit-slider-thumb { margin-top:-7px; height:20px; width:20px; border-radius:50%; }
-
-    /* Helper text line-height for compact layout */
-    .small { font-size:12px; color:#444; line-height:1.35; }
-
-    /* Annotation Modal Styles */
-    #annoModal .content { display: grid; grid-template-columns: 1fr; gap: 10px; }
-    #annoModal label { font-weight: 600; font-size: 13px; }
-    #annoModal input[type="color"] { padding: 4px; height: 40px; }
-    #annoModal textarea { min-height: 80px; resize: vertical; }
-    #annoImageViewer { border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px; text-align: center; }
-    #annoImageViewer img { max-width: 100%; max-height: 250px; height: auto; border-radius: 6px; margin-bottom: 10px; }
-    #annoFlipBtn { margin-top: 8px; }
-
-    /* Read-only Popup Overlay */
-    #popup {
-      position: absolute;
-      background-color: white;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      padding: 12px;
-      border-radius: 10px;
-      border: 1px solid #ccc;
-      bottom: 12px;
-      left: -50px;
-      min-width: 280px;
-      max-width: 320px;
-      pointer-events: auto;
+    .tool-btn.active {
+      background-color: #1f2937; /* gray-800 */
+      color: #ffffff;
+      border-color: #1f2937;
     }
+    
+    /* For Popup Arrow */
     #popup:before {
       content: "";
       position: absolute;
@@ -354,314 +70,337 @@
       left: 48px;
       border-width: 8px;
       border-style: solid;
-      border-color: #ccc transparent transparent transparent;
-    }
-    #popup-closer {
-      text-decoration: none;
-      position: absolute;
-      top: 2px;
-      right: 8px;
-      font-size: 20px;
-      cursor: pointer;
-      color: #333;
-    }
-    #popup-content h4 { margin: 0 0 8px; font-size: 14px; }
-    #popup-content p { margin: 0 0 8px; font-size: 12px; max-height: 60px; overflow-y: auto; }
-    #popup-content img { max-width: 100%; border-radius: 6px; }
-
-    /* Story Mode Panel */
-    #story-capture-form { display: grid; gap: 8px; padding: 8px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 10px; }
-    #story-list { list-style: none; padding: 0; margin: 0; }
-    #story-list .btn-sm { padding: 4px 8px; font-size: 12px; border-radius: 6px; }
-    #story-list li {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 8px;
-      border-bottom: 1px solid #e5e7eb;
-    }
-    #story-list li:last-child { border-bottom: none; }
-    #story-list .scene-label { flex-grow: 1; font-size: 13px; font-weight: 600; }
-
-    /* Presentation Mode */
-    #presentation-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.5);
-        z-index: 3000;
-        display: none; /* Hidden by default */
-        flex-direction: column;
-        color: #fff;
-        font-family: system-ui, Arial, sans-serif;
-    }
-    #presentation-content {
-        position: absolute;
-        bottom: 20px;
-        left: 20px;
-        right: 20px;
-        background: rgba(17, 24, 39, 0.85);
-        backdrop-filter: blur(8px);
-        border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 12px;
-        padding: 20px;
-        max-width: 600px;
-        margin: 0 auto;
-    }
-    #presentation-content h2 { margin: 0 0 10px; font-size: 20px; }
-    #presentation-content p { margin: 0; font-size: 14px; max-height: 100px; overflow-y: auto; }
-    #presentation-nav {
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        display: flex;
-        gap: 10px;
-        align-items: center;
-    }
-    #presentation-nav button {
-        background: rgba(17, 24, 39, 0.85);
-        border: 1px solid rgba(255,255,255,0.1);
+      border-color: #d1d5db transparent transparent transparent;
     }
   </style>
 </head>
-<body>
-  <div id="map">
-    <img class="map-logo" src="https://raw.githubusercontent.com/lqtue/VMA/main/data/logo.png" alt="Logo" />
-    <div id="dividerX" class="divider-v"></div>
-    <div id="dividerY" class="divider-h"></div>
-    <div id="lens" class="lens"></div>
-    <div id="lensHandle" class="lens-handle" title="Resize lens"></div>
-    <div id="dividerHandleX" class="handle handle-v" title="Drag split (X)"></div>
-    <div id="dividerHandleY" class="handle handle-h" title="Drag split (Y)"></div>
-  </div>
+<body class="bg-gray-800 font-sans antialiased overflow-hidden">
 
-  <div id="coordMenu" class="coordmenu" role="dialog" aria-label="Coordinates">
-    <div class="hd">Coordinates</div>
-    <div id="coordValue" class="val">—</div>
-    <div class="sub">Click the value to copy.</div>
-    <div class="actions">
-        <button id="coordCopy">Copy</button>
-        <button id="coordClose">Close</button>
-    </div>
-  </div>
-
-  <div id="popup" class="ol-popup">
-    <a href="#" id="popup-closer" class="ol-popup-closer">&times;</a>
-    <div id="popup-content"></div>
-  </div>
-
-  <div id="presentation-overlay">
-    <div id="presentation-content">
-        <h2 id="presentation-title"></h2>
-        <p id="presentation-details"></p>
-    </div>
-    <div id="presentation-nav">
-        <span id="presentation-counter"></span>
-        <button id="presentation-prev">&lt; Prev</button>
-        <button id="presentation-next">Next &gt;</button>
-        <button id="presentation-exit" class="btn-red">Exit</button>
-    </div>
-  </div>
-
-  <div class="bottombar">
-    <div id="barResizer" class="bar-resizer" role="separator" aria-orientation="vertical" title="Drag to resize">
-      <div class="grip"></div>
-    </div>
-    <div class="tabs">
-      <button id="tabControl" class="tab-btn active">Control</button>
-      <button id="tabResearch" class="tab-btn">Research</button>
-      <button id="tabStory" class="tab-btn">Story</button>
-      <button id="tabSearch" class="tab-btn">Search</button>
-      <button id="tabMore" class="tab-btn">More</button>
-      <span class="spacer"></span>
-    </div>
-    <div id="panelDivider" class="section-sep"><span id="panelDividerLabel">Control</span></div>
-
-    <div id="panelControl" class="tab-panel active" role="tabpanel" aria-labelledby="tabControl">
-      <div class="control-grid">
-        <div class="lbl">Basemap</div>
-        <div class="inline">
-          <select id="basemap">
-            <option value="esri-imagery" selected>Esri World Imagery</option>
-            <option value="g-streets">Google Streets</option>
-            <option value="g-satellite">Google Satellite</option>
-          </select>
+  <div class="h-screen w-screen flex">
+    <aside id="sidebar" class="relative z-20 h-full flex flex-col w-full md:w-96 bg-gray-50 border-r border-gray-200 shadow-lg transition-all duration-300 ease-in-out">
+      <header class="flex items-center justify-between gap-3 p-4 border-b border-gray-200 bg-white">
+        <div class="flex items-center gap-3 overflow-hidden">
+          <img src="https://raw.githubusercontent.com/lqtue/VMA/main/data/logo.png" alt="Logo" class="w-8 h-8 flex-shrink-0">
+          <div class="collapsible-content">
+            <h1 class="text-lg font-bold text-gray-800">Vietnam Map Archive</h1>
+            <p class="text-xs text-gray-500">VMA Map Viewer</p>
+          </div>
         </div>
-        <div class="lbl">View</div>
-        <div class="inline">
-          <select id="viewMode">
-            <option value="overlay" selected>Overlay</option>
-            <option value="side-x">Side-by-side X</option>
-            <option value="side-y">Side-by-side Y</option>
-            <option value="spy">Spyglass</option>
-          </select>
-        </div>
+      </header>
 
-        <div class="lbl">Overlay</div>
-        <div class="inline">
-          <select id="allmapsId" class="w-100"></select>
-        </div>
-        <div class="lbl">Opacity</div>
-        <div class="inline">
-          <input id="opacityRange" class="range" type="range" min="0" max="1" step="0.01" value="0.80" />
-          <span id="opLabel" class="small muted">80%</span>
-        </div>
+      <div id="collapsed-nav" class="hidden h-full flex-col items-center pt-5 space-y-4 bg-white border-r">
+        <button data-tab="Map" class="collapsed-tab-btn p-3 rounded-lg hover:bg-gray-200" title="Map">
+          <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13v-6m0-6V4m6 16l-5.447-2.724A1 1 0 019 16.382V5.618a1 1 0 011.447-.894L15 7m0 13v-6m0-6V4"></path></svg>
+        </button>
+        <button data-tab="Annotations" class="collapsed-tab-btn p-3 rounded-lg hover:bg-gray-200" title="Annotations">
+          <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+        </button>
+        <button data-tab="Story" class="collapsed-tab-btn p-3 rounded-lg hover:bg-gray-200" title="Story">
+          <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+        </button>
+        <button data-tab="Info" class="collapsed-tab-btn p-3 rounded-lg hover:bg-gray-200" title="Info">
+          <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        </button>
+      </div>
+      
+      <nav class="hidden md:flex border-b border-gray-200 bg-gray-100 collapsible-content">
+        <button data-tab="Map" class="tab-btn-desktop active flex-1 p-3 text-sm font-semibold text-center text-gray-500 hover:bg-gray-200 transition-colors">Map</button>
+        <button data-tab="Annotations" class="tab-btn-desktop flex-1 p-3 text-sm font-semibold text-center text-gray-500 hover:bg-gray-200 transition-colors">Annotations</button>
+        <button data-tab="Story" class="tab-btn-desktop flex-1 p-3 text-sm font-semibold text-center text-gray-500 hover:bg-gray-200 transition-colors">Story</button>
+        <button data-tab="Info" class="tab-btn-desktop flex-1 p-3 text-sm font-semibold text-center text-gray-500 hover:bg-gray-200 transition-colors">Info</button>
+      </nav>
 
-        <div class="lbl">Custom ID</div>
-        <div class="inline" style="grid-column: 2 / -1;">
-          <input class="w-100" type="text" id="customMapId" placeholder="Or enter a custom Allmaps ID..." />
-          <button id="loadCustomBtn" class="btn-green" style="flex-shrink: 0;">Load</button>
-        </div>
-      </div>
-      <div class="inline" style="gap:12px; align-items:center; justify-content:center;">
-        <button id="metaBtn" class="btn-lg" title="Show metadata" disabled>Metadata</button>
-      </div>
-      <div class="inline" style="justify-content: center; align-items: center; gap: 8px; min-height: 20px; margin-top: 4px;">
-        <div id="loader" class="loader"></div>
-        <div id="status" class="small muted" aria-live="polite"></div>
-      </div>
-    </div>
-
-    <div id="panelResearch" class="tab-panel" role="tabpanel" aria-labelledby="tabResearch">
-      <div class="toolbar">
-        <button id="btnPoint" type="button" class="tool-btn">Point</button>
-        <button id="btnLine" type="button" class="tool-btn">Line</button>
-        <button id="btnPoly" type="button" class="tool-btn">Object</button>
-        <span class="break"></span>
-        <button id="importCsvBtn" type="button" class="btn-green">Load</button>
-        <input id="importCsvInput" type="file" accept=".csv,text/csv" style="display:none;" />
-        <button id="exportCsv" type="button" disabled>Save</button>
-        <button id="researchClear" class="btn-red">Clear</button>
-      </div>
-      <div class="small muted" style="margin-top:6px;">Tip: Click a feature on the map to view details. Use the table to Edit/Hide/Delete.</div>
-      <div class="anno-wrap">
-        <table id="annoTable" class="tbl">
-          <thead>
-            <tr><th>#</th><th>Type</th><th>Label</th><th>Metric</th><th>Actions</th></tr>
-          </thead>
-          <tbody id="annoTbody"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div id="panelStory" class="tab-panel" role="tabpanel" aria-labelledby="tabStory">
-        <div id="story-capture-form">
-            <input type="text" id="sceneTitleInput" placeholder="Scene Title">
-            <textarea id="sceneDetailsInput" placeholder="Scene Details..." rows="2"></textarea>
-            <div class="inline" style="gap: 8px;">
-                <button id="captureSceneBtn" class="btn-lg btn-blue w-100">Capture Scene</button>
-                <button id="cancelEditBtn" class="btn-lg btn-red" style="display: none;">Cancel</button>
+      <div class="flex-1 overflow-y-auto custom-scrollbar collapsible-content">
+        <div id="panelMap" class="tab-panel p-4 space-y-5">
+          <div class="space-y-2">
+            <label for="basemap" class="text-sm font-medium text-gray-700">Basemap</label>
+            <select id="basemap" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+              <option value="esri-imagery" selected>Esri World Imagery</option>
+              <option value="g-streets">Google Streets</option>
+              <option value="g-satellite">Google Satellite</option>
+            </select>
+          </div>
+          <div class="space-y-2">
+            <label for="allmapsId" class="text-sm font-medium text-gray-700">Historical Map</label>
+            <select id="allmapsId" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"></select>
+          </div>
+           <div class="space-y-2">
+            <label for="customMapId" class="text-sm font-medium text-gray-700">or Custom Map</label>
+            <div class="flex gap-2">
+              <input type="text" id="customMapId" placeholder="Enter Allmaps ID..." class="flex-grow p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+              <button id="loadCustomBtn" class="px-4 py-2 text-white bg-indigo-600 rounded-md hover:bg-indigo-700 font-semibold">Load</button>
             </div>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <label for="viewMode" class="text-sm font-medium text-gray-700">View Mode</label>
+              <select id="viewMode" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                <option value="overlay" selected>Overlay</option>
+                <option value="side-x">Side-by-side X</option>
+                <option value="side-y">Side-by-side Y</option>
+                <option value="spy">Spyglass</option>
+              </select>
+            </div>
+            <div class="space-y-2">
+              <label class="text-sm font-medium text-gray-700">Opacity</label>
+              <div class="flex items-center gap-3">
+                <input id="opacityRange" type="range" min="0" max="1" step="0.01" value="0.80" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                <span id="opLabel" class="text-sm font-mono text-gray-600 w-10 text-center">80%</span>
+              </div>
+            </div>
+          </div>
+          <div class="pt-4 border-t border-gray-200">
+            <button id="metaBtn" disabled class="w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed font-semibold">
+              Show Metadata
+            </button>
+          </div>
+          <div class="flex items-center justify-center gap-2 min-h-[20px]">
+            <div id="loader" class="hidden h-5 w-5 animate-spin rounded-full border-2 border-solid border-indigo-600 border-r-transparent"></div>
+            <div id="status" class="text-sm text-gray-500"></div>
+          </div>
         </div>
-        <div class="toolbar">
-            <button id="loadStoryBtn" class="btn-lg">Load Story</button>
-            <input id="loadStoryInput" type="file" accept=".json,application/json" style="display:none;" />
-            <button id="presentStoryBtn" class="btn-lg btn-indigo" disabled>Present Story</button>
-            <button id="downloadStoryBtn" class="btn-lg btn-green" disabled>Download Story</button>
+        
+        <div id="panelAnnotations" class="tab-panel hidden p-4 space-y-4">
+          <div class="pb-4 border-b">
+            <div class="flex gap-2 items-center">
+              <input id="searchQuery" type="text" placeholder="Search for a place..." class="flex-grow p-2 border border-gray-300 rounded-md">
+              <button id="searchLocate" title="Find my location" class="p-2 text-white bg-green-600 rounded-md hover:bg-green-700">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+              </button>
+            </div>
+            <div id="searchResults" class="mt-2 h-48 overflow-auto custom-scrollbar space-y-1">
+                <div class="p-4 text-center text-sm text-gray-500">Enter a place or address to search.</div>
+            </div>
+          </div>
+          
+          <div>
+            <div class="space-y-3 p-2 bg-gray-100 rounded-lg">
+              <div class="flex gap-2 items-center">
+                <span class="text-sm font-medium text-gray-700 w-14 text-right pr-2">Draw:</span>
+                <button id="btnPoint" type="button" class="tool-btn flex-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100">Point</button>
+                <button id="btnLine" type="button" class="tool-btn flex-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100">Line</button>
+                <button id="btnPoly" type="button" class="tool-btn flex-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100">Object</button>
+              </div>
+              <div class="flex gap-2 items-center">
+                <span class="text-sm font-medium text-gray-700 w-14 text-right pr-2">Actions:</span>
+                <input id="importCsvInput" type="file" accept=".csv,text/csv" class="hidden" />
+                <button id="importCsvBtn" title="Load Annotations (.csv)" class="flex-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100">Load</button>
+                <button id="exportCsv" title="Save Annotations (.csv)" class="flex-1 px-3 py-1.5 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50" disabled>Save</button>
+                <button id="researchClear" title="Clear All Annotations" class="flex-1 px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700">Clear All</button>
+              </div>
+            </div>
+            <div class="mt-2 text-xs text-gray-500">Tip: Click a feature on the map to view details. Use the table to Edit/Hide/Delete.</div>
+            <div class="mt-2 h-80 overflow-auto custom-scrollbar border border-gray-200 rounded-lg">
+              <table id="annoTable" class="w-full text-sm text-left text-gray-600">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 z-10">
+                  <tr>
+                    <th scope="col" class="px-4 py-2">Label</th>
+                    <th scope="col" class="px-4 py-2">Metric</th>
+                    <th scope="col" class="px-4 py-2">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="annoTbody" class="bg-white"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
-        <div class="anno-wrap">
-            <ul id="story-list">
-                <li class="muted" id="story-placeholder">No scenes captured yet.</li>
+
+        <div id="panelStory" class="tab-panel hidden p-4 space-y-4">
+          <div id="story-capture-form" class="p-4 space-y-3 bg-gray-100 rounded-lg border border-gray-200">
+            <input type="text" id="sceneTitleInput" placeholder="Scene Title" class="w-full p-2 border border-gray-300 rounded-md">
+            <textarea id="sceneDetailsInput" placeholder="Scene Details..." rows="2" class="w-full p-2 border border-gray-300 rounded-md"></textarea>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Visible Annotations</label>
+              <div id="sceneAnnotationList" class="h-32 overflow-y-auto custom-scrollbar border border-gray-300 rounded-md bg-white p-2 space-y-1">
+                <p class="text-xs text-gray-500 p-2">No annotations available to select.</p>
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <button id="captureSceneBtn" class="flex-1 px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 font-semibold">Capture Scene</button>
+              <button id="cancelEditBtn" class="hidden px-4 py-2 text-white bg-red-600 rounded-md hover:bg-red-700 font-semibold">Cancel</button>
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-2 justify-center p-2 rounded-lg">
+            <input id="loadStoryInput" type="file" accept=".json,application/json" class="hidden" />
+            <button id="loadStoryBtn" class="px-3 py-1.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100">Load</button>
+            <button id="downloadStoryBtn" class="px-3 py-1.5 text-sm font-semibold text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50" disabled>Save</button>
+            <button id="presentStoryBtn" class="px-3 py-1.5 text-sm font-semibold text-white bg-purple-600 rounded-md hover:bg-purple-700 disabled:opacity-50" disabled>Present</button>
+          </div>
+           <div class="h-80 overflow-auto custom-scrollbar border border-gray-200 rounded-lg">
+            <ul id="story-list" class="divide-y divide-gray-200">
+              <li class="p-4 text-center text-gray-500" id="story-placeholder">No scenes captured yet.</li>
             </ul>
+          </div>
         </div>
-    </div>
 
-    <div id="panelSearch" class="tab-panel" role="tabpanel" aria-labelledby="tabSearch">
-      <div class="inline" style="gap:10px; align-items: center; width:100%;">
-        <span class="lbl">Place</span>
-        <input id="searchQuery" type="text" class="w-100" placeholder="e.g., Ho Chi Minh City, Notre-Dame Cathedral" />
-        <button id="searchClear" type="button" class="btn-red">Clear</button>
-        <button id="searchLocate" type="button" class="btn-green" title="Find my location">My location</button>
+        <div id="panelInfo" class="tab-panel hidden p-4 space-y-6">
+          <div class="flex flex-wrap gap-3 justify-center">
+             <a class="px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-full hover:bg-gray-100" href="https://www.canva.com/design/DAGsdCxbAho/UqzPt9W5ceAJH7sPdhvYOg/view?utm_content=DAGsdCxbAho&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h9602289aa0" target="_blank" rel="noreferrer">About Us</a>
+            <a class="px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-full hover:bg-gray-100" href="https://forms.gle/xJexnw5sDWxSETNt5" target="_blank" rel="noreferrer">Feedback</a>
+            <a class="px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-full hover:bg-gray-100" href="mailto:vietnam.ma.project@gmail.com" target="_blank" rel="noreferrer">Email Us</a>
+          </div>
+          <div class="space-y-2 text-sm text-gray-700">
+            <h3 class="font-bold text-base">Tips & Shortcuts</h3>
+            <ul class="list-disc list-inside space-y-2">
+              <li><b>Rotate map:</b> hold <b>Ctrl/⌘</b> and drag. Click compass to reset north.</li>
+              <li><b>View modes:</b> Use the selector for different views. Drag handles to resize.</li>
+              <li><b>Annotations:</b> Press <b>Enter</b> to finish drawing, <b>Esc</b> to cancel.</li>
+              <li><b>Coordinates:</b> Right-click map to show lon,lat coordinates.</li>
+              <li><b>Stories:</b> Go to the Story tab, set up your map view and visible annotations, then click 'Capture Scene'. You can present, load, or download your story.</li>
+            </ul>
+          </div>
+           <div class="text-center text-xs text-gray-400 pt-4 border-t">Built with OpenLayers, Allmaps & OSM</div>
+        </div>
       </div>
-      <div class="results-wrap">
-        <div id="searchResults" class="results"></div>
-      </div>
-    </div>
-    
-    <div id="panelMore" class="tab-panel" role="tabpanel" aria-labelledby="tabMore">
-      <div class="sticky-actions">
-        <a class="btn-chip" href="https://www.canva.com/design/DAGsdCxbAho/UqzPt9W5ceAJH7sPdhvYOg/view?utm_content=DAGsdCxbAho&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h9602289aa0" target="_blank" rel="noreferrer">About Us</a>
-        <a class="btn-chip" href="https://forms.gle/xJexnw5sDWxSETNt5" target="_blank" rel="noreferrer">Feedback</a>
-        <a class="btn-chip" href="mailto:vietnam.ma.project@gmail.com" target="_blank" rel="noreferrer">Email Us</a>
-      </div>
-      <div class="small" style="margin-top:10px;">
-        <div style="font-weight:600; margin-bottom:6px;">Tips & Shortcuts</div>
-        <ul style="margin:0; padding-left: 18px; display:grid; gap:6px;">
-          <li><b>Rotate map:</b> hold <b>Ctrl</b> (Windows/Linux) or <b>⌘ Cmd</b> (macOS) and drag. Click the rotate control to reset north‑up. Rotation is disabled in side and spyglass mode.</li>
-          <li><b>Zoom:</b> scroll the mouse wheel or double‑click to zoom in.</li>
-          <li><b>View modes:</b> pick <i>Overlay / Side‑by‑side X / Side‑by‑side Y / Spyglass</i>. In side‑by‑side, drag the small circle handle to move the divider. In spyglass, drag the small knob on the right edge to resize.</li>
-          <li><b>Annotations:</b> choose Point/Line/Object. Press <b>Enter</b> to finish a line/polygon, <b>Esc</b> to cancel the current sketch. Click a feature on the map to open a popup to edit its details, color, and images. Use <i>Export CSV</i> / <i>Import CSV</i> to save/restore.</li>
-          <li><b>Search:</b> type a place and press Enter. Click a result to zoom. Use the <i>Add</i> button on a result to add it to annotations (the search list clears after adding).</li>
-          <li><b>Coordinates:</b> right‑click anywhere on the map to show lon,lat. Click the value or the <i>Copy</i> button to copy to clipboard.</li>
-          <li><b>Opacity:</b> use the slider to adjust the overlay transparency.</li>
-        </ul>
-      </div>
-    </div>
-    <div class="creditbar small muted">
-      <span>The Vietnam Map Archive (VMA) Project · Built with OpenLayers, Allmaps & OSM</span>
-      <span class="spacer"></span>
+    </aside>
+    <button id="sidebar-toggle" class="absolute z-20 top-1/2 -translate-y-1/2 w-8 h-16 bg-white hover:bg-gray-100 border-y border-r border-gray-300 rounded-r-full shadow-md flex items-center justify-center transition-all duration-300 ease-in-out">
+      <svg id="sidebar-toggle-icon" class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
+    </button>
+
+    <main class="flex-1 relative bg-gray-300">
+      <div id="map" class="h-full w-full"></div>
+      <div id="dividerX" class="divider-v"></div>
+      <div id="dividerY" class="divider-h"></div>
+      <div id="lens" class="lens"></div>
+      <div id="lensHandle" class="lens-handle" title="Resize lens"></div>
+      <div id="dividerHandleX" class="handle handle-v" title="Drag split (X)"></div>
+      <div id="dividerHandleY" class="handle handle-h" title="Drag split (Y)"></div>
+    </main>
+  </div>
+
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around shadow-lg-top">
+      <button data-tab="Map" class="tab-btn-mobile active flex-1 flex flex-col items-center p-2 text-gray-500">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13v-6m0-6V4m6 16l-5.447-2.724A1 1 0 019 16.382V5.618a1 1 0 011.447-.894L15 7m0 13v-6m0-6V4"></path></svg>
+        <span class="text-xs">Map</span>
+      </button>
+      <button data-tab="Annotations" class="tab-btn-mobile flex-1 flex flex-col items-center p-2 text-gray-500">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+        <span class="text-xs">Annotations</span>
+      </button>
+      <button data-tab="Story" class="tab-btn-mobile flex-1 flex flex-col items-center p-2 text-gray-500">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+        <span class="text-xs">Story</span>
+      </button>
+      <button data-tab="Info" class="tab-btn-mobile flex-1 flex flex-col items-center p-2 text-gray-500">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        <span class="text-xs">Info</span>
+      </button>
+  </nav>
+
+  <div id="coordMenu" class="hidden absolute z-50 min-w-[220px] bg-white border border-gray-300 rounded-lg shadow-xl p-3" role="dialog" aria-label="Coordinates">
+    <div class="font-semibold text-sm text-gray-800 mb-2">Coordinates</div>
+    <div id="coordValue" class="font-mono text-xs text-gray-800 bg-gray-100 border border-gray-200 rounded-md p-2 cursor-pointer select-all">—</div>
+    <div class="text-xs text-gray-500 mt-2">Click the value to copy.</div>
+    <div class="flex gap-2 mt-2">
+        <button id="coordCopy" class="flex-1 px-3 py-1 text-xs font-semibold text-white bg-gray-800 rounded-md hover:bg-gray-900">Copy</button>
+        <button id="coordClose" class="flex-1 px-3 py-1 text-xs font-semibold text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300">Close</button>
     </div>
   </div>
 
-  <div id="metaModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="metaTitle">
-    <div class="content">
-      <div class="hd">
-        <h3 id="metaTitle" style="margin:0;">Map metadata</h3>
-        <button id="closeMeta" class="close" aria-label="Close">×</button>
-      </div>
-      <div id="metaSummary" class="small">–</div>
-      <div class="small" style="margin-top:10px;">Footprint source: <span id="metaLinkWrap" class="muted">–</span></div>
+  <div id="popup" class="ol-popup relative bg-white rounded-lg shadow-lg border border-gray-300 min-w-[280px] max-w-[320px] pointer-events-auto">
+    <a href="#" id="popup-closer" class="ol-popup-closer absolute top-1 right-2 text-xl text-gray-500 hover:text-gray-800">&times;</a>
+    <div id="popup-content" class="p-3"></div>
+  </div>
+  
+  <div id="presentation-overlay" class="hidden fixed inset-0 bg-transparent z-40 flex-col text-white font-sans">
+    <div id="presentation-content" class="absolute bottom-5 left-5 right-5 max-w-2xl mx-auto bg-gray-900/80 backdrop-blur-sm border border-white/10 rounded-lg p-5">
+        <h2 id="presentation-title" class="text-xl font-bold mb-2"></h2>
+        <p id="presentation-details" class="text-sm max-h-24 overflow-y-auto"></p>
+    </div>
+    <div id="presentation-nav" class="absolute top-5 right-5 flex gap-3 items-center">
+        <span id="presentation-counter" class="font-mono text-sm px-3 py-1.5 bg-gray-900/80 border border-white/10 rounded-md"></span>
+        <button id="presentation-prev" class="px-4 py-1.5 text-sm font-semibold text-white bg-gray-900/80 border border-white/10 rounded-md hover:bg-white/10 disabled:opacity-50">&lt; Prev</button>
+        <button id="presentation-next" class="px-4 py-1.5 text-sm font-semibold text-white bg-gray-900/80 border border-white/10 rounded-md hover:bg-white/10 disabled:opacity-50">Next &gt;</button>
+        <button id="presentation-exit" class="px-4 py-1.5 text-sm font-semibold text-white bg-red-600/90 border border-white/10 rounded-md hover:bg-red-700">Exit</button>
     </div>
   </div>
 
-  <!-- Annotation Edit Modal -->
-  <div id="annoModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="annoTitle">
-    <div class="content">
-      <div class="hd">
-        <h3 id="annoTitle" style="margin:0;">Edit Annotation</h3>
-        <button id="closeAnnoModal" class="close" aria-label="Close">×</button>
+  <div id="metaModal" class="hidden fixed inset-0 bg-gray-900/60 z-30 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="metaTitle">
+    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-[90vw] max-h-[80vh] flex flex-col">
+      <div class="flex items-center justify-between p-4 border-b">
+        <h3 id="metaTitle" class="text-lg font-bold text-gray-800">Map Metadata</h3>
+        <button id="closeMeta" class="text-2xl text-gray-500 hover:text-gray-800" aria-label="Close">×</button>
       </div>
-      <div>
-        <label for="annoLabelInput">Label</label>
-        <input type="text" id="annoLabelInput" class="w-100" placeholder="A short name for the feature">
+      <div id="metaSummary" class="p-4 overflow-y-auto text-sm space-y-2">
+        <div class="grid grid-cols-[max-content,1fr] gap-x-4 gap-y-2">
+          </div>
       </div>
-      <div>
-        <label for="annoDetailsInput">Details</label>
-        <textarea id="annoDetailsInput" class="w-100" placeholder="Add detailed notes here..."></textarea>
+      <div class="p-4 border-t text-xs text-gray-600">Footprint source: <span id="metaLinkWrap" class="text-gray-400">–</span></div>
+    </div>
+  </div>
+
+  <div id="annoModal" class="hidden fixed inset-0 bg-gray-900/60 z-30 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="annoTitle">
+    <div class="bg-white rounded-lg shadow-xl max-w-lg w-[90vw] max-h-[80vh] flex flex-col">
+      <div class="flex items-center justify-between p-4 border-b">
+        <h3 id="annoTitle" class="text-lg font-bold text-gray-800">Edit Annotation</h3>
+        <button id="closeAnnoModal" class="text-2xl text-gray-500 hover:text-gray-800" aria-label="Close">×</button>
       </div>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: end;">
+      <div class="p-4 space-y-4 overflow-y-auto custom-scrollbar">
         <div>
-          <label for="annoColorInput">Color</label>
-          <input type="color" id="annoColorInput" class="w-100" value="#2563eb">
+          <label for="annoLabelInput" class="block text-sm font-medium text-gray-700 mb-1">Label</label>
+          <input type="text" id="annoLabelInput" class="w-full p-2 border border-gray-300 rounded-md" placeholder="A short name for the feature">
         </div>
-        <button id="saveAnnoBtn" class="btn-green btn-lg">Save Changes</button>
+        <div>
+          <label for="annoDetailsInput" class="block text-sm font-medium text-gray-700 mb-1">Details</label>
+          <textarea id="annoDetailsInput" rows="3" class="w-full p-2 border border-gray-300 rounded-md" placeholder="Add detailed notes here..."></textarea>
+        </div>
+        <div>
+          <label for="annoColorInput" class="block text-sm font-medium text-gray-700 mb-1">Color</label>
+          <input type="color" id="annoColorInput" class="w-full h-10 p-1 border border-gray-300 rounded-md" value="#2563eb">
+        </div>
+        <div class="pt-4 border-t space-y-3">
+          <div>
+            <label for="annoImgCurrentInput" class="block text-sm font-medium text-gray-700 mb-1">Image URL (Current)</label>
+            <input type="text" id="annoImgCurrentInput" class="w-full p-2 border border-gray-300 rounded-md" placeholder="https://...">
+          </div>
+          <div>
+            <label for="annoImgPastInput" class="block text-sm font-medium text-gray-700 mb-1">Image URL (Past)</label>
+            <input type="text" id="annoImgPastInput" class="w-full p-2 border border-gray-300 rounded-md" placeholder="https://...">
+          </div>
+        </div>
       </div>
-      <div style="border-top: 1px solid #e5e7eb; margin-top: 10px; padding-top: 10px;">
-        <label for="annoImgCurrentInput">Current Image URL</label>
-        <input type="text" id="annoImgCurrentInput" class="w-100" placeholder="https://...">
-      </div>
-      <div>
-        <label for="annoImgPastInput">Past Image URL</label>
-        <input type="text" id="annoImgPastInput" class="w-100" placeholder="https://...">
-      </div>
-      <div id="annoImageViewer">
-        <img id="annoImage" src="" alt="Annotation image" style="display:none;" onerror="this.style.display='none';">
-        <p id="annoImageStatus" class="small muted" style="display:none;">No image provided.</p>
-        <button id="annoFlipBtn" style="display:none;">Flip to Past Image</button>
+      <div class="p-4 border-t bg-gray-50">
+        <button id="saveAnnoBtn" class="w-full px-4 py-2 text-white bg-green-600 rounded-md hover:bg-green-700 font-semibold">Save Changes</button>
       </div>
     </div>
   </div>
 
 
   <script>
-    // --- State variables ---
-    let currentMapId = null; // Holds the internal ID from Allmaps library
-    let loadedOverlayId = null; // Holds the ID used to load the map (from sheet or input)
-    let draw = null, keyDownFinish = null, keyDownCancel = null, fidCounter = 1;
-    let selectedFeatureId = null; // ID of the feature being edited in the modal
-    let story = []; // Array to hold captured story scenes
-    let currentSlideIndex = -1; // For presentation mode
-    let editingSceneIndex = null; // For story scene editing
-    let loadingMapController = null; // To abort previous map loads
+    // --- App State Management ---
+    const appState = {
+      map: {
+        currentMapId: null,
+        loadedOverlayId: null,
+        loadingMapController: null,
+        rotationLocked: false,
+        view: {
+          mode: 'overlay',
+          sideRatio: 0.5,
+          lensRadius: 150,
+        },
+        dragging: { sideX: false, sideY: false, lensR: false },
+      },
+      ui: {
+        selectedFeatureId: null,
+      },
+      research: {
+        drawInteraction: null,
+        keyDownFinish: null,
+        keyDownCancel: null,
+        featureIdCounter: 1,
+      },
+      story: {
+        scenes: [],
+        currentSlideIndex: -1,
+        editingSceneIndex: null,
+      },
+      search: {
+        abortController: null,
+        timer: null,
+        lastSearchTime: 0,
+      }
+    };
 
     // --- Base layers ---
     const esriImageryLayer = new ol.layer.Tile({
@@ -674,102 +413,53 @@
       properties: { 'name': 'esri-imagery', 'base': true },
       zIndex: 0
     });
-
     const googleStreets = new ol.layer.Tile({
       source: new ol.source.XYZ({
         urls: [
-          'https://mt0.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
-          'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
-          'https://mt2.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
-          'https://mt3.google.com/vt/lyrs=m&x={x}&y={y}&z={z}'
+          'https://mt0.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+          'https://mt2.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', 'https://mt3.google.com/vt/lyrs=m&x={x}&y={y}&z={z}'
         ],
-        maxZoom: 22,
-        crossOrigin: 'anonymous',
-        attributions: '© Google'
+        maxZoom: 22, crossOrigin: 'anonymous', attributions: 'Tiles © Google'
       }),
-      visible: false,
-      properties: { 'name': 'g-streets', 'base': true },
-      zIndex: 0
+      visible: false, properties: { 'name': 'g-streets', 'base': true }, zIndex: 0
     });
-
     const googleSatellite = new ol.layer.Tile({
       source: new ol.source.XYZ({
         urls: [
-          'https://mt0.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
-          'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
-          'https://mt2.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
-          'https://mt3.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
+          'https://mt0.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+          'https://mt2.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', 'https://mt3.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
         ],
-        maxZoom: 22,
-        crossOrigin: 'anonymous',
-        attributions: '© Google'
+        maxZoom: 22, crossOrigin: 'anonymous', attributions: 'Tiles © Google'
       }),
-      visible: false,
-      properties: { 'name': 'g-satellite', 'base': true },
-      zIndex: 0
+      visible: false, properties: { 'name': 'g-satellite', 'base': true }, zIndex: 0
     });
 
-    // Initialize the Allmaps WarpedMapLayer
-    const warpedMapLayer = new Allmaps.WarpedMapLayer({
-      zIndex: 10,
-      properties: { 'name': 'allmaps-overlay' }
-    });
-
-    // Optional: footprint outline layer (vector)
-    const footprintSource = new ol.source.Vector();
-    const footprintLayer = new ol.layer.Vector({
-      source: footprintSource,
-      style: new ol.style.Style({
-        stroke: new ol.style.Stroke({ color: '#ef4444', width: 2 }),
-        fill: new ol.style.Fill({ color: 'rgba(239,68,68,0.08)' })
-      }),
-      visible: false,
-      zIndex: 15,
-      properties: { 'name': 'footprint' }
-    });
-
-    // Research annotations layer (points/lines/polygons) with labels
+    // --- Overlay & Feature Layers ---
+    const warpedMapLayer = new Allmaps.WarpedMapLayer({ zIndex: 10, properties: { 'name': 'allmaps-overlay' } });
     const researchSource = new ol.source.Vector();
     const researchLayer = new ol.layer.VectorImage({
       source: researchSource,
       zIndex: 20,
       imageRatio: 2,
       style: (feature) => {
-        if (feature.get('hidden')) {
-          return null; // Don't render hidden features
-        }
+        if (feature.get('hidden')) return null;
         const color = feature.get('color') || '#2563eb';
         const type = feature.getGeometry().getType();
         const label = feature.get('label') || '';
-        
         const stroke = new ol.style.Stroke({ color: color, width: 2 });
-        const fill = new ol.style.Fill({ color: color.slice(0, 7) + '26' }); // Add 15% alpha
-        const pointBase = new ol.style.Style({
-          image: new ol.style.Circle({
-            radius: 5,
-            fill: new ol.style.Fill({ color: color }),
-            stroke: new ol.style.Stroke({ color: '#ffffff', width: 2 })
-          })
-        });
+        const fill = new ol.style.Fill({ color: color.slice(0, 7) + '26' });
+        const pointBase = new ol.style.Style({ image: new ol.style.Circle({ radius: 5, fill: new ol.style.Fill({ color: color }), stroke: new ol.style.Stroke({ color: '#ffffff', width: 2 }) }) });
         const lineBase = new ol.style.Style({ stroke });
         const polyBase = new ol.style.Style({ stroke, fill });
-
-        let styles;
-        if (type === 'Point') styles = [pointBase];
-        else if (type.includes('Line')) styles = [lineBase];
-        else styles = [polyBase];
-
+        let styles = type === 'Point' ? [pointBase] : (type.includes('Line') ? [lineBase] : [polyBase]);
         if (label) {
           const isPoly = type.includes('Polygon');
           styles.push(new ol.style.Style({
             geometry: isPoly ? (f) => f.getGeometry().getInteriorPoint() : undefined,
             text: new ol.style.Text({
-              text: label,
-              font: '12px system-ui, Arial',
-              fill: new ol.style.Fill({ color: '#111827' }),
+              text: label, font: '12px system-ui, Arial', fill: new ol.style.Fill({ color: '#111827' }),
               stroke: new ol.style.Stroke({ color: 'rgba(255,255,255,0.9)', width: 3 }),
-              offsetY: isPoly ? 0 : -12,
-              overflow: true
+              offsetY: isPoly ? 0 : -12, overflow: true
             })
           }));
         }
@@ -777,8 +467,6 @@
       },
       properties: { 'name': 'research' }
     });
-
-    // Search highlight layer
     const searchSource = new ol.source.Vector();
     const searchLayer = new ol.layer.VectorImage({
       source: searchSource,
@@ -791,30 +479,165 @@
       }),
       properties: { 'name': 'search' }
     });
-
-    // Map
+    
+    // --- Map Initialization ---
     const map = new ol.Map({
       target: 'map',
-      layers: [esriImageryLayer, googleStreets, googleSatellite, warpedMapLayer, footprintLayer, researchLayer, searchLayer],
+      layers: [esriImageryLayer, googleStreets, googleSatellite, warpedMapLayer, researchLayer, searchLayer],
       view: new ol.View({
         center: ol.proj.fromLonLat([106.70098, 10.77653]),
         zoom: 14,
         enableRotation: true,
         constrainRotation: false
-      })
+      }),
+      controls: [
+        new ol.control.Attribution({ collapsible: false }),
+        new ol.control.Rotate({ autoHide: false }),
+        new ol.control.Zoom(),
+        new ol.control.ScaleLine()
+      ]
     });
-
-    // Add ScaleLine control explicitly (Attribution is included by default)
-    map.addControl(new ol.control.ScaleLine());
-    // Add a visible rotate control and rotation interactions
-    const rotateCtrl = new ol.control.Rotate({ autoHide: false });
-    map.addControl(rotateCtrl);
     const dragRotate  = new ol.interaction.DragRotate({ condition: ol.events.condition.platformModifierKeyOnly });
     const pinchRotate = new ol.interaction.PinchRotate();
     map.addInteraction(dragRotate);
     map.addInteraction(pinchRotate);
 
-    let rotationLocked = false;
+    // --- UI Element References ---
+    // Main Layout
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    const sidebarToggleIcon = document.getElementById('sidebar-toggle-icon');
+    const collapsedNav = document.getElementById('collapsed-nav');
+    // Control Panel
+    const basemapSel = document.getElementById('basemap');
+    const mapSelector = document.getElementById('allmapsId');
+    const customMapIdInput = document.getElementById('customMapId');
+    const loadCustomBtn = document.getElementById('loadCustomBtn');
+    const viewModeSel = document.getElementById('viewMode');
+    const opacityRange = document.getElementById('opacityRange');
+    const opLabel = document.getElementById('opLabel');
+    const loader = document.getElementById('loader');
+    const statusEl = document.getElementById('status');
+    const metaBtn = document.getElementById('metaBtn');
+    // Research Panel
+    const btnPoint = document.getElementById('btnPoint');
+    const btnLine = document.getElementById('btnLine');
+    const btnPoly = document.getElementById('btnPoly');
+    const researchClear = document.getElementById('researchClear');
+    const annoTbody = document.getElementById('annoTbody');
+    const exportCsvBtn = document.getElementById('exportCsv');
+    const importCsvBtn = document.getElementById('importCsvBtn');
+    const importCsvInput = document.getElementById('importCsvInput');
+    const searchQuery = document.getElementById('searchQuery');
+    const searchResults = document.getElementById('searchResults');
+    const searchLocate = document.getElementById('searchLocate');
+    // Story Panel
+    const sceneTitleInput = document.getElementById('sceneTitleInput');
+    const sceneDetailsInput = document.getElementById('sceneDetailsInput');
+    const sceneAnnotationList = document.getElementById('sceneAnnotationList');
+    const captureSceneBtn = document.getElementById('captureSceneBtn');
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+    const loadStoryBtn = document.getElementById('loadStoryBtn');
+    const loadStoryInput = document.getElementById('loadStoryInput');
+    const presentStoryBtn = document.getElementById('presentStoryBtn');
+    const downloadStoryBtn = document.getElementById('downloadStoryBtn');
+    const storyList = document.getElementById('story-list');
+    // Viewport Dividers & Handles
+    const dividerXEl = document.getElementById('dividerX');
+    const dividerYEl = document.getElementById('dividerY');
+    const dividerHandleX = document.getElementById('dividerHandleX');
+    const dividerHandleY = document.getElementById('dividerHandleY');
+    const lensEl = document.getElementById('lens');
+    const lensHandle = document.getElementById('lensHandle');
+    // Metadata Modal
+    const metaModal = document.getElementById('metaModal');
+    const metaLinkWrap = document.getElementById('metaLinkWrap');
+    const metaSummary = document.getElementById('metaSummary');
+    const closeMeta = document.getElementById('closeMeta');
+    // Annotation Modal
+    const annoModal = document.getElementById('annoModal');
+    const closeAnnoModalBtn = document.getElementById('closeAnnoModal');
+    const annoTitle = document.getElementById('annoTitle');
+    const annoLabelInput = document.getElementById('annoLabelInput');
+    const annoDetailsInput = document.getElementById('annoDetailsInput');
+    const annoColorInput = document.getElementById('annoColorInput');
+    const annoImgCurrentInput = document.getElementById('annoImgCurrentInput');
+    const annoImgPastInput = document.getElementById('annoImgPastInput');
+    const saveAnnoBtn = document.getElementById('saveAnnoBtn');
+    // Coordinate Menu
+    const coordMenu  = document.getElementById('coordMenu');
+    const coordValue = document.getElementById('coordValue');
+    const coordCopy  = document.getElementById('coordCopy');
+    const coordClose = document.getElementById('coordClose');
+    // Popup Overlay
+    const popupContainer = document.getElementById('popup');
+    const popupContent = document.getElementById('popup-content');
+    const popupCloser = document.getElementById('popup-closer');
+    // Presentation Overlay
+    const presentationOverlay = document.getElementById('presentation-overlay');
+    const presentationTitle = document.getElementById('presentation-title');
+    const presentationDetails = document.getElementById('presentation-details');
+    const presentationCounter = document.getElementById('presentation-counter');
+    const presentationPrev = document.getElementById('presentation-prev');
+    const presentationNext = document.getElementById('presentation-next');
+    const presentationExit = document.getElementById('presentation-exit');
+
+    // --- Sidebar & UI Functions ---
+    function updateSidebarPosition() {
+        const isCollapsed = sidebar.classList.contains('collapsed');
+        let currentWidth;
+        if (isCollapsed) {
+            currentWidth = 64; // collapsed width is fixed at 64px
+        } else {
+            // expanded width depends on screen size due to `w-full md:w-96`
+            currentWidth = window.innerWidth >= 768 ? 384 : window.innerWidth;
+        }
+        sidebarToggle.style.left = `${currentWidth - 2}px`;
+    }
+
+    function updateSidebar(isCollapsed) {
+        sidebar.classList.toggle('collapsed', isCollapsed);
+        sidebarToggle.classList.toggle('hidden', isCollapsed);
+        if (!isCollapsed) {
+            const iconPath = "M11 19l-7-7 7-7m8 14l-7-7 7-7";
+            sidebarToggleIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="${iconPath}"></path>`;
+            updateSidebarPosition();
+        }
+        setTimeout(() => map.updateSize(), 350);
+    }
+    function toggleSidebar() {
+        updateSidebar(!sidebar.classList.contains('collapsed'));
+    }
+    function showTab(tabName) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+      document.getElementById(`panel${tabName}`).classList.remove('hidden');
+      document.querySelectorAll('.tab-btn-desktop, .tab-btn-mobile').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll(`.tab-btn-desktop[data-tab="${tabName}"], .tab-btn-mobile[data-tab="${tabName}"]`).forEach(t => t.classList.add('active'));
+      if (sidebar.classList.contains('collapsed')) {
+        updateSidebar(false);
+      }
+      if (tabName === 'Story') {
+        const scene = appState.story.editingSceneIndex !== null ? appState.story.scenes[appState.story.editingSceneIndex] : null;
+        populateSceneAnnotationList(scene ? scene.visibleFeatures : null);
+      }
+    }
+    document.querySelectorAll('.tab-btn-desktop, .tab-btn-mobile').forEach(button => {
+      button.addEventListener('click', () => showTab(button.dataset.tab));
+    });
+    sidebarToggle.addEventListener('click', toggleSidebar);
+    window.addEventListener('resize', updateSidebarPosition);
+    collapsedNav.querySelectorAll('.collapsed-tab-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            showTab(button.dataset.tab);
+        });
+    });
+
+    // --- Map Control Functions ---
+    function setBasemap(name) {
+      [esriImageryLayer, googleStreets, googleSatellite].forEach(l => l.setVisible(l.getProperties().name === name));
+    }
+    basemapSel.addEventListener('change', () => setBasemap(basemapSel.value));
+
     function hasInteraction(i){ return map.getInteractions().getArray().includes(i); }
     function enableRotateInteractions(on){
       if (on) {
@@ -826,447 +649,179 @@
       }
     }
     function lockRotation(lock){
-      rotationLocked = !!lock;
+      appState.map.rotationLocked = !!lock;
       const v = map.getView();
-      if (rotationLocked) {
+      if (appState.map.rotationLocked) {
         try { v.setRotation(0); } catch(_) {}
         enableRotateInteractions(false);
-        if (rotateCtrl && rotateCtrl.element) rotateCtrl.element.style.display = 'none';
       } else {
         enableRotateInteractions(true);
-        if (rotateCtrl && rotateCtrl.element) rotateCtrl.element.style.display = '';
       }
     }
 
-    // UI elements
-    const mapEl = document.getElementById('map');
-    const basemapSel = document.getElementById('basemap');
-    const mapSelector = document.getElementById('allmapsId');
-    const statusEl = document.getElementById('status');
-    const metaLinkWrap = document.getElementById('metaLinkWrap');
-    const metaSummary = document.getElementById('metaSummary');
-    const metaBtn = document.getElementById('metaBtn');
-    const metaModal = document.getElementById('metaModal');
-    const closeMeta = document.getElementById('closeMeta');
-    const tabControl = document.getElementById('tabControl');
-    const tabResearch = document.getElementById('tabResearch');
-    const tabStory = document.getElementById('tabStory');
-    const tabSearch = document.getElementById('tabSearch');
-    const tabMore = document.getElementById('tabMore');
-    const panelControl = document.getElementById('panelControl');
-    const panelResearch = document.getElementById('panelResearch');
-    const panelStory = document.getElementById('panelStory');
-    const panelSearch = document.getElementById('panelSearch');
-    const panelMore = document.getElementById('panelMore');
-    const btnPoint = document.getElementById('btnPoint');
-    const btnLine  = document.getElementById('btnLine');
-    const btnPoly  = document.getElementById('btnPoly');
-    const researchClear = document.getElementById('researchClear');
-    const annoTbody = document.getElementById('annoTbody');
-    const exportCsvBtn = document.getElementById('exportCsv');
-    const importCsvBtn = document.getElementById('importCsvBtn');
-    const importCsvInput = document.getElementById('importCsvInput');
-    const dividerLabel = document.getElementById('panelDividerLabel');
-    const searchQuery = document.getElementById('searchQuery');
-    const searchClearBtn = document.getElementById('searchClear');
-    const searchResults = document.getElementById('searchResults');
-    const searchLocate = document.getElementById('searchLocate');
-    const viewModeSel = document.getElementById('viewMode');
-    const opacityRange = document.getElementById('opacityRange');
-    const opLabel = document.getElementById('opLabel');
-    const dividerXEl = document.getElementById('dividerX');
-    const dividerYEl = document.getElementById('dividerY');
-    const dividerHandleX = document.getElementById('dividerHandleX');
-    const dividerHandleY = document.getElementById('dividerHandleY');
-    const lensEl = document.getElementById('lens');
-    const lensHandle = document.getElementById('lensHandle');
-    const loader = document.getElementById('loader');
-    const customMapIdInput = document.getElementById('customMapId');
-    const loadCustomBtn = document.getElementById('loadCustomBtn');
-    const coordMenu  = document.getElementById('coordMenu');
-    const coordValue = document.getElementById('coordValue');
-    const coordCopy  = document.getElementById('coordCopy');
-    const coordClose = document.getElementById('coordClose');
-    // Annotation Modal UI elements
-    const annoModal = document.getElementById('annoModal');
-    const closeAnnoModalBtn = document.getElementById('closeAnnoModal');
-    const annoTitle = document.getElementById('annoTitle');
-    const annoLabelInput = document.getElementById('annoLabelInput');
-    const annoDetailsInput = document.getElementById('annoDetailsInput');
-    const annoColorInput = document.getElementById('annoColorInput');
-    const annoImgCurrentInput = document.getElementById('annoImgCurrentInput');
-    const annoImgPastInput = document.getElementById('annoImgPastInput');
-    const annoImageViewer = document.getElementById('annoImageViewer');
-    const annoImage = document.getElementById('annoImage');
-    const annoImageStatus = document.getElementById('annoImageStatus');
-    const annoFlipBtn = document.getElementById('annoFlipBtn');
-    const saveAnnoBtn = document.getElementById('saveAnnoBtn');
-    // Popup Overlay UI elements
-    const popupContainer = document.getElementById('popup');
-    const popupContent = document.getElementById('popup-content');
-    const popupCloser = document.getElementById('popup-closer');
-    // Story Mode UI elements
-    const sceneTitleInput = document.getElementById('sceneTitleInput');
-    const sceneDetailsInput = document.getElementById('sceneDetailsInput');
-    const captureSceneBtn = document.getElementById('captureSceneBtn');
-    const cancelEditBtn = document.getElementById('cancelEditBtn');
-    const loadStoryBtn = document.getElementById('loadStoryBtn');
-    const loadStoryInput = document.getElementById('loadStoryInput');
-    const presentStoryBtn = document.getElementById('presentStoryBtn');
-    const downloadStoryBtn = document.getElementById('downloadStoryBtn');
-    const storyList = document.getElementById('story-list');
-    const storyPlaceholder = document.getElementById('story-placeholder');
-    // Presentation Mode UI elements
-    const presentationOverlay = document.getElementById('presentation-overlay');
-    const presentationContent = document.getElementById('presentation-content');
-    const presentationTitle = document.getElementById('presentation-title');
-    const presentationDetails = document.getElementById('presentation-details');
-    const presentationNav = document.getElementById('presentation-nav');
-    const presentationCounter = document.getElementById('presentation-counter');
-    const presentationPrev = document.getElementById('presentation-prev');
-    const presentationNext = document.getElementById('presentation-next');
-    const presentationExit = document.getElementById('presentation-exit');
-
-    // --- Bottom bar resizer ---
-    (function(){
-      const bar = document.querySelector('.bottombar');
-      const grip = document.getElementById('barResizer');
-      if (!bar || !grip) return;
-      const MIN_H = 200;
-      function clamp2(v,a,b){ return Math.max(a, Math.min(b, v)); }
-      function apply(h){ bar.style.height = h + 'px'; }
-      const saved = Number(localStorage.getItem('barH') || '');
-      if (!Number.isNaN(saved) && saved > 0) {
-        const vh = window.innerHeight || document.documentElement.clientHeight || saved;
-        apply(clamp2(saved, MIN_H, Math.round(vh * 0.9)));
-      }
-      let draggingBar = false;
-      grip.addEventListener('pointerdown', (e) => {
-        draggingBar = true; grip.setPointerCapture(e.pointerId); e.preventDefault();
-      });
-      window.addEventListener('pointermove', (e) => {
-        if (!draggingBar) return;
-        const vh = window.innerHeight || document.documentElement.clientHeight;
-        const newH = clamp2(vh - e.clientY, MIN_H, Math.round(vh * 0.9));
-        apply(newH);
-      });
-      function stopBarDrag(){
-        if (!draggingBar) return;
-        draggingBar = false;
-        const h = Math.round(bar.getBoundingClientRect().height);
-        localStorage.setItem('barH', String(h));
-      }
-      window.addEventListener('pointerup', stopBarDrag);
-      window.addEventListener('pointercancel', () => { draggingBar = false; });
-      grip.addEventListener('dblclick', () => { bar.style.height = ''; localStorage.removeItem('barH'); });
-    })();
-
-    // --- Collapse / Expand bottom bar (keep credit visible) ---
-    (function(){
-      const bar = document.querySelector('.bottombar');
-      if (!bar) return;
-      function expandToSaved(){
-        const saved = Number(localStorage.getItem('barH') || '');
-        if (!Number.isNaN(saved) && saved > 0) {
-          const vh = window.innerHeight || document.documentElement.clientHeight || saved;
-          const clamped = Math.max(80, Math.min(saved, Math.round(vh * 0.9)));
-          bar.style.height = clamped + 'px';
-        } else {
-          bar.style.height = '';
-        }
-      }
-      function collapseBar(){
-        try {
-          const h = Math.round(bar.getBoundingClientRect().height);
-          if (h > 0) localStorage.setItem('barH', String(h));
-        } catch(_){}
-        bar.classList.add('collapsed');
-        bar.style.height = '';
-        localStorage.setItem('barCollapsed','1');
-      }
-      function expandBar(){
-        bar.classList.remove('collapsed');
-        expandToSaved();
-        localStorage.removeItem('barCollapsed');
-      }
-      // Start collapsed by default
-      collapseBar();
-
-      // On pageshow (e.g., from bfcache), respect the last state
-      window.addEventListener('pageshow', () => {
-        if (localStorage.getItem('barCollapsed') === '1') {
-          bar.classList.add('collapsed');
-          bar.style.height = '';
-        } else {
-          bar.classList.remove('collapsed');
-          expandToSaved();
-        }
-      });
-      window.__collapseBar = collapseBar;
-      window.__expandBar = expandBar;
-      window.__isBarCollapsed = () => bar.classList.contains('collapsed');
-    })();
-
-    // Basemap switching
-    function setBasemap(name) {
-      [esriImageryLayer, googleStreets, googleSatellite].forEach(l => l.setVisible(false));
-      if (name === 'esri-imagery') esriImageryLayer.setVisible(true);
-      else if (name === 'g-streets') googleStreets.setVisible(true);
-      else if (name === 'g-satellite') googleSatellite.setVisible(true);
-    }
-    basemapSel.addEventListener('change', () => setBasemap(basemapSel.value));
-
-    // Modal open/close handlers
-    function openMeta() { if (metaBtn.disabled) return; metaModal.classList.add('show'); }
-    function closeMetaFn() { metaModal.classList.remove('show'); }
-    if (metaBtn) metaBtn.addEventListener('click', openMeta);
-    if (closeMeta) closeMeta.addEventListener('click', closeMetaFn);
-    if (metaModal) metaModal.addEventListener('click', (e) => { if (e.target === metaModal) closeMetaFn(); });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMetaFn(); });
-
-    // Tabs behavior
-    let lastTabClicked = null;
-    function setDivider(text){ if (dividerLabel) dividerLabel.textContent = text; }
-    function showTab(panelToShow, tabToShow, label) {
-        [panelControl, panelResearch, panelStory, panelSearch, panelMore].forEach(p => p.classList.remove('active'));
-        [tabControl, tabResearch, tabStory, tabSearch, tabMore].forEach(t => t.classList.remove('active'));
-        if (panelToShow) panelToShow.classList.add('active');
-        if (tabToShow) tabToShow.classList.add('active');
-        if (typeof setActiveTool === 'function') setActiveTool('none');
-        setDivider(label);
-    }
-    function handleTabClick(tabName, showFn) {
-      return function(e) {
-        const bar = document.querySelector('.bottombar');
-        if (!bar) return;
-        if (bar.classList.contains('collapsed')) {
-          if (window.__expandBar) window.__expandBar();
-          showFn();
-          lastTabClicked = tabName;
-          return;
-        }
-        if (lastTabClicked === tabName) {
-            bar.classList.contains('collapsed') ? window.__expandBar() : window.__collapseBar();
-            lastTabClicked = null;
-            return;
-        }
-        showFn();
-        lastTabClicked = tabName;
-      };
-    }
-    tabControl.addEventListener('click', handleTabClick('control', () => showTab(panelControl, tabControl, 'Control')));
-    tabResearch.addEventListener('click', handleTabClick('research', () => showTab(panelResearch, tabResearch, 'Research')));
-    tabStory.addEventListener('click', handleTabClick('story', () => showTab(panelStory, tabStory, 'Story')));
-    tabSearch.addEventListener('click', handleTabClick('search', () => showTab(panelSearch, tabSearch, 'Search')));
-    tabMore.addEventListener('click', handleTabClick('more', () => showTab(panelMore, tabMore, 'More')));
-    showTab(panelControl, tabControl, 'Control'); // Initial state
-
-    // Load Allmaps overlay by ID (using the Allmaps Plugin)
     async function loadAllmaps(id) {
       if (!id) return;
+      if (appState.map.loadingMapController) appState.map.loadingMapController.abort();
+      appState.map.loadingMapController = new AbortController();
+      const { signal } = appState.map.loadingMapController;
 
-      // Abort any previous loading operation
-      if (loadingMapController) {
-        loadingMapController.abort();
-      }
-      loadingMapController = new AbortController();
-      const { signal } = loadingMapController;
-
-      currentMapId = null;
-      loadedOverlayId = null;
+      appState.map.currentMapId = null;
+      appState.map.loadedOverlayId = null;
       warpedMapLayer.clear();
-      footprintSource.clear();
-      if (loader) loader.style.display = 'block';
-      if (statusEl) {
-        statusEl.textContent = 'Loading map annotation...';
-        statusEl.className = 'small muted';
-      }
-      if (metaBtn) metaBtn.disabled = true;
+      loader.classList.remove('hidden');
+      statusEl.textContent = 'Loading map...';
+      statusEl.classList.remove('text-red-600');
+      metaBtn.disabled = true;
 
       const annotationUrl = `https://annotations.allmaps.org/images/${id}`;
-      if(metaLinkWrap) metaLinkWrap.innerHTML = `<a class="link" href="${annotationUrl}" target="_blank" rel="noreferrer">${annotationUrl}</a>`;
+      metaLinkWrap.innerHTML = `<a class="text-indigo-600 hover:underline" href="${annotationUrl}" target="_blank" rel="noreferrer">${annotationUrl}</a>`;
 
       try {
         const response = await fetch(annotationUrl, { signal });
         if (!response.ok) throw new Error(`Annotation not found (HTTP ${response.status})`);
         const annotation = await response.json();
-
-        // After fetching, check if we've been aborted before the heavy part
         if (signal.aborted) return;
-
         const mapIds = await warpedMapLayer.addGeoreferenceAnnotation(annotation);
-
-        // After adding, check again. This is the most important check.
         if (signal.aborted) return;
-
-        if (!mapIds || mapIds.length === 0 || mapIds[0] instanceof Error) {
-            throw mapIds[0] || new Error('Failed to add map to layer.');
-        }
-        currentMapId = mapIds[0];
-        loadedOverlayId = id; // Store the ID used to load
-
-        const extent = warpedMapLayer.getExtent();
-
-        if (extent && !ol.extent.isEmpty(extent)) {
-            const footprintFeature = new ol.Feature(ol.geom.Polygon.fromExtent(extent));
-            footprintSource.addFeature(footprintFeature);
-        }
-
-        renderMetadataSummary(annotation, null, extent);
-        if (metaBtn) metaBtn.disabled = false;
-        if (statusEl) statusEl.textContent = 'Map loaded successfully.';
+        if (!mapIds || mapIds.length === 0 || mapIds[0] instanceof Error) throw mapIds[0] || new Error('Failed to add map to layer.');
+        
+        appState.map.currentMapId = mapIds[0];
+        appState.map.loadedOverlayId = id;
+        
+        renderMetadataSummary(annotation, null, warpedMapLayer.getExtent());
+        metaBtn.disabled = false;
+        statusEl.textContent = 'Map loaded successfully.';
         
         const opacity = parseFloat(opacityRange.value);
-        warpedMapLayer.setMapOpacity(currentMapId, opacity);
+        warpedMapLayer.setMapOpacity(appState.map.currentMapId, opacity);
+
       } catch (err) {
-        if (err.name === 'AbortError') {
-          console.log(`Load for ${id} was aborted.`);
-          return; // Don't show an error message for aborted requests
-        }
+        if (err.name === 'AbortError') return;
         console.error(err);
-        if (statusEl) {
-          statusEl.textContent = `Error: ${err.message}`;
-          statusEl.className = 'small error';
-        }
+        statusEl.textContent = `Error: ${err.message}`;
+        statusEl.classList.add('text-red-600');
       } finally {
-        // Only hide loader if this was the last request that wasn't aborted.
         if (!signal.aborted) {
-            if (loader) loader.style.display = 'none';
-            loadingMapController = null;
+          loader.classList.add('hidden');
+          appState.map.loadingMapController = null;
         }
       }
     }
-    
-    // Opacity control
-    opacityRange.addEventListener('input', () => {
-      const v = parseFloat(opacityRange.value);
-      opLabel.textContent = `${Math.round(v * 100)}%`;
-      if (currentMapId) {
-        warpedMapLayer.setMapOpacity(currentMapId, v);
+    mapSelector.addEventListener('change', () => {
+      if (mapSelector.value) {
+        loadAllmaps(mapSelector.value);
+        customMapIdInput.value = '';
       }
     });
+    const loadFromInput = () => {
+      const id = customMapIdInput.value.trim();
+      if (id) {
+        loadAllmaps(id);
+        mapSelector.value = '';
+      }
+    };
+    loadCustomBtn.addEventListener('click', loadFromInput);
+    customMapIdInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') loadFromInput(); });
 
-    // View modes: using CSS clip-path on the plugin's canvas
-    let currentMode = 'overlay';
-    let sideRatio = 0.5;
-    let lensRadius = 150;
-    let dragging = { sideX:false, sideY:false, lensR:false };
-
+    // --- View Mode & Opacity ---
     function mapSize() { return map.getSize() || [0,0]; }
-
     function updateClipPath() {
         const canvas = warpedMapLayer.getCanvas();
         if (!canvas) return;
         const [w, h] = mapSize();
         if (w === 0 || h === 0) return;
 
-        if (currentMode === 'overlay') {
-            canvas.style.clipPath = '';
-        } else if (currentMode === 'side-x') {
-            const x = w * sideRatio;
-            canvas.style.clipPath = `polygon(${x}px 0, ${w}px 0, ${w}px ${h}px, ${x}px ${h}px)`;
-        } else if (currentMode === 'side-y') {
-            const y = h * sideRatio;
-            canvas.style.clipPath = `polygon(0 ${y}px, ${w}px ${y}px, ${w}px ${h}px, 0 ${h}px)`;
-        } else if (currentMode === 'spy') {
-            const cx = w / 2;
-            const cy = h / 2;
-            canvas.style.clipPath = `circle(${lensRadius}px at ${cx}px ${cy}px)`;
-        }
+        if (appState.map.view.mode === 'overlay') canvas.style.clipPath = '';
+        else if (appState.map.view.mode === 'side-x') canvas.style.clipPath = `polygon(${w * appState.map.view.sideRatio}px 0, ${w}px 0, ${w}px ${h}px, ${w * appState.map.view.sideRatio}px ${h}px)`;
+        else if (appState.map.view.mode === 'side-y') canvas.style.clipPath = `polygon(0 ${h * appState.map.view.sideRatio}px, ${w}px ${h * appState.map.view.sideRatio}px, ${w}px ${h}px, 0 ${h}px)`;
+        else if (appState.map.view.mode === 'spy') canvas.style.clipPath = `circle(${appState.map.view.lensRadius}px at ${w/2}px ${h/2}px)`;
     }
-
     function setMode(mode) {
       stopDrag();
-      currentMode = mode;
+      appState.map.view.mode = mode;
       viewModeSel.value = mode;
       lockRotation(mode !== 'overlay');
-      const currentOpacity = parseFloat(opacityRange.value);
-      if (currentMapId) {
-          warpedMapLayer.setMapOpacity(currentMapId, mode === 'overlay' ? currentOpacity : 1);
-      }
       updateClipPath();
       updateDividersAndHandles();
       updateLensAndHandle();
     }
     viewModeSel.addEventListener('change', () => setMode(viewModeSel.value));
-
-    map.on('moveend', updateClipPath);
-    map.on('change:size', updateClipPath);
+    opacityRange.addEventListener('input', () => {
+      const v = parseFloat(opacityRange.value);
+      opLabel.textContent = `${Math.round(v * 100)}%`;
+      if (appState.map.currentMapId) {
+        warpedMapLayer.setMapOpacity(appState.map.currentMapId, v);
+      }
+    });
+    map.on(['moveend', 'change:size'], () => {
+        updateClipPath();
+        updateDividersAndHandles();
+        updateLensAndHandle();
+    });
 
     function onMove(e) {
-      if (!Object.values(dragging).some(Boolean)) return;
-      const rect = mapEl.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+      if (!Object.values(appState.map.dragging).some(Boolean)) return;
+      const rect = document.getElementById('map').getBoundingClientRect();
+      const x = e.clientX - rect.left, y = e.clientY - rect.top;
       const [w,h] = mapSize();
-      if (dragging.lensR) {
-        const cx = w/2, cy = h/2;
-        const dx = x - cx, dy = y - cy;
-        lensRadius = Math.max(20, Math.min(Math.sqrt(dx*dx + dy*dy), Math.min(w,h)/2));
+      if (appState.map.dragging.lensR) {
+        const dx = x - w/2, dy = y - h/2;
+        appState.map.view.lensRadius = Math.max(20, Math.min(Math.sqrt(dx*dx + dy*dy), Math.min(w,h)/2));
         updateLensAndHandle();
-      } else if (dragging.sideX) {
-        sideRatio = Math.max(0.01, Math.min(x / w, 0.99));
+      } else if (appState.map.dragging.sideX) {
+        appState.map.view.sideRatio = Math.max(0.01, Math.min(x / w, 0.99));
         updateDividersAndHandles();
-      } else if (dragging.sideY) {
-        sideRatio = Math.max(0.01, Math.min(y / h, 0.99));
+      } else if (appState.map.dragging.sideY) {
+        appState.map.view.sideRatio = Math.max(0.01, Math.min(y / h, 0.99));
         updateDividersAndHandles();
       }
       updateClipPath();
     }
-    function stopDrag(){ dragging = { sideX:false, sideY:false, lensR:false }; }
-    dividerHandleX.addEventListener('pointerdown', (e)=>{ if (currentMode!=='side-x') return; dragging.sideX=true; dividerHandleX.setPointerCapture(e.pointerId); e.preventDefault(); });
-    dividerHandleY.addEventListener('pointerdown', (e)=>{ if (currentMode!=='side-y') return; dragging.sideY=true; dividerHandleY.setPointerCapture(e.pointerId); e.preventDefault(); });
-    lensHandle.addEventListener('pointerdown', (e)=>{ if (currentMode!=='spy') return; dragging.lensR=true; lensHandle.setPointerCapture(e.pointerId); e.preventDefault(); });
+    function stopDrag(){ appState.map.dragging = { sideX:false, sideY:false, lensR:false }; }
+    dividerHandleX.addEventListener('pointerdown', (e)=>{ if (appState.map.view.mode!=='side-x') return; appState.map.dragging.sideX=true; e.target.setPointerCapture(e.pointerId); e.preventDefault(); });
+    dividerHandleY.addEventListener('pointerdown', (e)=>{ if (appState.map.view.mode!=='side-y') return; appState.map.dragging.sideY=true; e.target.setPointerCapture(e.pointerId); e.preventDefault(); });
+    lensHandle.addEventListener('pointerdown', (e)=>{ if (appState.map.view.mode!=='spy') return; appState.map.dragging.lensR=true; e.target.setPointerCapture(e.pointerId); e.preventDefault(); });
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', stopDrag);
     window.addEventListener('pointercancel', stopDrag);
 
-    // Functions to update the visual divider/lens UI elements
     function updateDividersAndHandles() {
         const [w, h] = mapSize();
-        const cx = w / 2, cy = h / 2;
-        const showX = currentMode === 'side-x', showY = currentMode === 'side-y';
+        const showX = appState.map.view.mode === 'side-x', showY = appState.map.view.mode === 'side-y';
         dividerXEl.style.display = showX ? 'block' : 'none';
         dividerHandleX.style.display = showX ? 'block' : 'none';
         if (showX) {
-            const x = w * sideRatio;
-            dividerXEl.style.left = x + 'px';
-            dividerXEl.style.height = h + 'px';
-            dividerHandleX.style.left = (x - 8) + 'px';
-            dividerHandleX.style.top  = (cy - 8) + 'px';
+            const x = w * appState.map.view.sideRatio;
+            dividerXEl.style.left = x + 'px'; dividerXEl.style.height = h + 'px';
+            dividerHandleX.style.left = (x - 8) + 'px'; dividerHandleX.style.top  = (h/2 - 8) + 'px';
         }
         dividerYEl.style.display = showY ? 'block' : 'none';
         dividerHandleY.style.display = showY ? 'block' : 'none';
         if (showY) {
-            const y = h * sideRatio;
-            dividerYEl.style.top = y + 'px';
-            dividerYEl.style.width = w + 'px';
-            dividerHandleY.style.left = (cx - 8) + 'px';
-            dividerHandleY.style.top = (y - 8) + 'px';
+            const y = h * appState.map.view.sideRatio;
+            dividerYEl.style.top = y + 'px'; dividerYEl.style.width = w + 'px';
+            dividerHandleY.style.left = (w/2 - 8) + 'px'; dividerHandleY.style.top = (y - 8) + 'px';
         }
     }
     function updateLensAndHandle() {
         const [w, h] = mapSize();
-        const cx = w / 2, cy = h / 2;
-        const d = Math.max(20, lensRadius * 2);
-        const show = currentMode === 'spy';
+        const d = Math.max(20, appState.map.view.lensRadius * 2);
+        const show = appState.map.view.mode === 'spy';
         lensEl.style.display = show ? 'block' : 'none';
         lensHandle.style.display = show ? 'block' : 'none';
         if (show) {
             lensEl.style.width=d+'px'; lensEl.style.height=d+'px';
-            lensEl.style.left=(cx - lensRadius)+'px'; lensEl.style.top=(cy - lensRadius)+'px';
-            lensHandle.style.left=(cx + lensRadius - 8)+'px';
-            lensHandle.style.top =(cy - 8)+'px';
+            lensEl.style.left=(w/2 - appState.map.view.lensRadius)+'px'; lensEl.style.top=(h/2 - appState.map.view.lensRadius)+'px';
+            lensHandle.style.left=(w/2 + appState.map.view.lensRadius - 8)+'px';
+            lensHandle.style.top =(h/2 - 8)+'px';
         }
     }
-    setMode('overlay');
-    
-    // --- All remaining functions (research tools, search, CSV, metadata summary, etc.) are included below ---
-    
-    // Research tools
+
+    // --- Research/Annotation Functions ---
+    const escHtml = (s) => String(s==null?'':s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
     function formatLen(m){ return (m>1000)? (m/1000).toFixed(2)+' km' : m.toFixed(1)+' m'; }
     function formatArea(a){ return (a>=1e6)? (a/1e6).toFixed(2)+' km²' : a.toFixed(1)+' m²'; }
-    function getOrAssignId(feat){ if (!feat.getId()){ feat.setId('a'+(fidCounter++)); } return feat.getId(); }
+    function getOrAssignId(feat){ if (!feat.getId()){ feat.setId('a'+(appState.research.featureIdCounter++)); } return feat.getId(); }
     function metricForFeature(feat){
         const g = feat.getGeometry(); const t = g.getType();
         try{
@@ -1274,82 +829,68 @@
                 const lonlat = ol.proj.toLonLat(g.getCoordinates());
                 return lonlat[0].toFixed(5)+', '+lonlat[1].toFixed(5);
             } else if (t==='LineString'){
-                const len = ol.sphere.getLength(g, { projection: 'EPSG:3857' });
-                return formatLen(len);
+                return formatLen(ol.sphere.getLength(g, { projection: 'EPSG:3857' }));
             } else if (t==='Polygon'){
-                const area = ol.sphere.getArea(g, { projection: 'EPSG:3857' });
-                return formatArea(area);
+                return formatArea(ol.sphere.getArea(g, { projection: 'EPSG:3857' }));
             }
         } catch(_){ }
         return '—';
     }
     function refreshAnnoTable(){
-        if (!annoTbody) return;
         const feats = researchSource.getFeatures();
-        if (exportCsvBtn) exportCsvBtn.disabled = (feats.length === 0);
+        exportCsvBtn.disabled = (feats.length === 0);
         let html = '';
-        for (const f of feats){
+        feats.forEach(f => {
             const id = getOrAssignId(f);
-            const t = f.getGeometry().getType();
             const label = f.get('label') || '';
-            const metric = metricForFeature(f);
             const isHidden = f.get('hidden');
-            const rowClass = isHidden ? 'class="hidden-row"' : '';
-            const hideText = isHidden ? 'Show' : 'Hide';
-            html += `<tr data-id="${id}" ${rowClass}>`
-                  + `<td>${id}</td>`
-                  + `<td>${t.replace('LineString','Line')}</td>`
-                  + `<td>${label.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</td>`
-                  + `<td>${metric}</td>`
-                  + `<td>`
-                  + `<button class="anno-action anno-zoom">Zoom</button> `
-                  + `<button class="anno-action anno-edit">Edit</button> `
-                  + `<button class="anno-action anno-hide">${hideText}</button> `
-                  + `<button class="anno-action anno-del">Delete</button>`
-                  + `</td>`
-                  + `</tr>`;
-        }
-        annoTbody.innerHTML = html || '<tr><td colspan="5" class="muted">No annotations yet.</td></tr>';
+            html += `<tr data-id="${id}" class="${isHidden ? 'opacity-50 bg-gray-50' : 'bg-white'}">
+                <td class="px-4 py-2 truncate max-w-xs">${escHtml(label)}</td>
+                <td class="px-4 py-2 text-xs">${metricForFeature(f)}</td>
+                <td class="px-4 py-2 whitespace-nowrap space-x-1">
+                    <button class="anno-zoom p-1 text-blue-600 hover:text-blue-800" title="Zoom"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg></button>
+                    <button class="anno-edit p-1 text-green-600 hover:text-green-800" title="Edit"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button>
+                    <button class="anno-hide p-1 text-gray-600 hover:text-gray-800" title="${isHidden ? 'Show' : 'Hide'}">${isHidden ? '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>' : '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>'}</button>
+                    <button class="anno-del p-1 text-red-600 hover:text-red-800" title="Delete"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                </td></tr>`;
+        });
+        annoTbody.innerHTML = html || '<tr><td colspan="3" class="p-4 text-center text-gray-500">No annotations yet.</td></tr>';
         annoTbody.querySelectorAll('tr[data-id]').forEach(row => {
-            const id = row.getAttribute('data-id');
+            const id = row.dataset.id;
             const f = researchSource.getFeatureById(id);
             if (!f) return;
-            row.querySelector('.anno-zoom').addEventListener('click', () => {
-                const ext = f.getGeometry().getExtent();
-                map.getView().fit(ext, { padding:[80,20,20,20], duration: 300, maxZoom: 18 });
-            });
+            row.querySelector('.anno-zoom').addEventListener('click', () => map.getView().fit(f.getGeometry().getExtent(), { padding:[80,80,80,80], duration: 300, maxZoom: 18 }));
             row.querySelector('.anno-edit').addEventListener('click', () => openAnnoModal(f));
-            row.querySelector('.anno-hide').addEventListener('click', () => {
-                f.set('hidden', !f.get('hidden'));
-                researchLayer.changed();
-                refreshAnnoTable();
-            });
+            row.querySelector('.anno-hide').addEventListener('click', () => { f.set('hidden', !f.get('hidden')); researchLayer.changed(); refreshAnnoTable(); });
             row.querySelector('.anno-del').addEventListener('click', () => { researchSource.removeFeature(f); });
         });
     }
     function cleanupTool(){
-        if (draw) { map.removeInteraction(draw); draw = null; }
-        if (keyDownFinish) { document.removeEventListener('keydown', keyDownFinish); keyDownFinish = null; }
-        if (keyDownCancel) { document.removeEventListener('keydown', keyDownCancel); keyDownCancel = null; }
-        [btnPoint, btnLine, btnPoly].forEach(b => b && b.classList.remove('active'));
+        if (appState.research.drawInteraction) map.removeInteraction(appState.research.drawInteraction);
+        appState.research.drawInteraction = null;
+        if (appState.research.keyDownFinish) document.removeEventListener('keydown', appState.research.keyDownFinish);
+        if (appState.research.keyDownCancel) document.removeEventListener('keydown', appState.research.keyDownCancel);
+        document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
     }
     function setActiveTool(mode){
         cleanupTool();
         if (!mode || mode==='none') return;
-        let type = null;
-        if (mode==='point') { type='Point'; if (btnPoint) btnPoint.classList.add('active'); }
-        else if (mode==='line') { type='LineString'; if (btnLine) btnLine.classList.add('active'); }
-        else if (mode==='polygon') { type='Polygon'; if (btnPoly) btnPoly.classList.add('active'); }
-        if (!type) return;
-        draw = new ol.interaction.Draw({ source: researchSource, type, stopClick:true });
-        map.addInteraction(draw);
-        if (mode==='line' || mode==='polygon') {
-            keyDownFinish = (e) => { if (e.key === 'Enter') { e.preventDefault(); try{ draw.finishDrawing(); }catch(_){} } };
-            document.addEventListener('keydown', keyDownFinish);
-            keyDownCancel = (e) => { if (e.key === 'Escape') { e.preventDefault(); try{ draw.abortDrawing(); }catch(_){} } };
-            document.addEventListener('keydown', keyDownCancel);
+        const typeMap = { point: 'Point', line: 'LineString', poly: 'Polygon' };
+        if (!typeMap[mode]) return;
+        
+        let buttonId = `#btn${mode.charAt(0).toUpperCase() + mode.slice(1)}`;
+        const button = document.querySelector(buttonId);
+        if (button) button.classList.add('active');
+
+        appState.research.drawInteraction = new ol.interaction.Draw({ source: researchSource, type: typeMap[mode] });
+        map.addInteraction(appState.research.drawInteraction);
+        if (mode !== 'point') {
+            appState.research.keyDownFinish = (e) => { if (e.key === 'Enter') { e.preventDefault(); try{ appState.research.drawInteraction.finishDrawing(); }catch(_){} } };
+            document.addEventListener('keydown', appState.research.keyDownFinish);
+            appState.research.keyDownCancel = (e) => { if (e.key === 'Escape') { e.preventDefault(); try{ appState.research.drawInteraction.abortDrawing(); }catch(_){} } };
+            document.addEventListener('keydown', appState.research.keyDownCancel);
         }
-        draw.on('drawend', (e) => {
+        appState.research.drawInteraction.on('drawend', (e) => {
           getOrAssignId(e.feature);
           e.feature.set('details', '');
           e.feature.set('color', '#2563eb');
@@ -1358,337 +899,240 @@
           e.feature.set('hidden', false);
           refreshAnnoTable();
           openAnnoModal(e.feature);
-          setActiveTool('none'); // Exit drawing mode after one shape
+          setActiveTool('none');
         });
     }
-    if (btnPoint) btnPoint.addEventListener('click', () => setActiveTool(btnPoint.classList.contains('active') ? 'none' : 'point'));
-    if (btnLine)  btnLine .addEventListener('click', () => setActiveTool(btnLine .classList.contains('active') ? 'none' : 'line'));
-    if (btnPoly)  btnPoly .addEventListener('click', () => setActiveTool(btnPoly .classList.contains('active') ? 'none' : 'polygon'));
-    researchSource.on(['addfeature', 'removefeature', 'clear'], refreshAnnoTable);
-    if (researchClear) researchClear.addEventListener('click', () => { researchSource.clear(); });
-    setActiveTool('none');
-    refreshAnnoTable();
-
-    // --- Annotation Modal Logic ---
+    btnPoint.addEventListener('click', () => setActiveTool(btnPoint.classList.contains('active') ? 'none' : 'point'));
+    btnLine.addEventListener('click', () => setActiveTool(btnLine.classList.contains('active') ? 'none' : 'line'));
+    btnPoly.addEventListener('click', () => setActiveTool(btnPoly.classList.contains('active') ? 'none' : 'poly'));
+    researchSource.on(['addfeature', 'removefeature', 'clear'], () => {
+        refreshAnnoTable();
+        if (!document.getElementById('panelStory').classList.contains('hidden')) {
+            const scene = appState.story.editingSceneIndex !== null ? appState.story.scenes[appState.story.editingSceneIndex] : null;
+            populateSceneAnnotationList(scene ? scene.visibleFeatures : null);
+        }
+    });
+    researchClear.addEventListener('click', () => { researchSource.clear(); });
+    
+    // --- Annotation Modal Functions ---
     function openAnnoModal(feature) {
       if (!feature) return;
-      selectedFeatureId = feature.getId();
-      annoTitle.textContent = `Edit Annotation (${selectedFeatureId})`;
+      appState.ui.selectedFeatureId = feature.getId();
+      annoTitle.textContent = `Edit Annotation (${appState.ui.selectedFeatureId})`;
       annoLabelInput.value = feature.get('label') || '';
       annoDetailsInput.value = feature.get('details') || '';
       annoColorInput.value = feature.get('color') || '#2563eb';
       annoImgCurrentInput.value = feature.get('img_current') || '';
       annoImgPastInput.value = feature.get('img_past') || '';
-      
-      updateImageViewer(feature);
-
-      annoModal.classList.add('show');
+      annoModal.classList.remove('hidden');
     }
-
     function closeAnnoModal() {
-      annoModal.classList.remove('show');
-      selectedFeatureId = null;
+      annoModal.classList.add('hidden');
+      appState.ui.selectedFeatureId = null;
     }
-
-    function updateImageViewer(feature) {
-        const currentUrl = feature.get('img_current');
-        const pastUrl = feature.get('img_past');
-        
-        const hasCurrent = currentUrl && currentUrl.trim() !== '';
-        const hasPast = pastUrl && pastUrl.trim() !== '';
-
-        if (hasCurrent) {
-            annoImage.src = currentUrl;
-            annoImage.style.display = 'block';
-            annoImageStatus.style.display = 'none';
-            annoImage.dataset.state = 'current';
-        } else if (hasPast) {
-            annoImage.src = pastUrl;
-            annoImage.style.display = 'block';
-            annoImageStatus.style.display = 'none';
-            annoImage.dataset.state = 'past';
-        } else {
-            annoImage.style.display = 'none';
-            annoImageStatus.style.display = 'block';
-        }
-
-        if (hasCurrent && hasPast) {
-            annoFlipBtn.style.display = 'block';
-            annoFlipBtn.textContent = 'Flip to Past Image';
-        } else {
-            annoFlipBtn.style.display = 'none';
-        }
-    }
-
-    annoFlipBtn.addEventListener('click', () => {
-        const feature = researchSource.getFeatureById(selectedFeatureId);
-        if (!feature) return;
-
-        const currentState = annoImage.dataset.state;
-        if (currentState === 'current') {
-            annoImage.src = feature.get('img_past');
-            annoImage.dataset.state = 'past';
-            annoFlipBtn.textContent = 'Flip to Current Image';
-        } else {
-            annoImage.src = feature.get('img_current');
-            annoImage.dataset.state = 'current';
-            annoFlipBtn.textContent = 'Flip to Past Image';
-        }
-    });
-
     saveAnnoBtn.addEventListener('click', () => {
-      if (!selectedFeatureId) return;
-      const feature = researchSource.getFeatureById(selectedFeatureId);
+      const feature = researchSource.getFeatureById(appState.ui.selectedFeatureId);
       if (!feature) return;
-
       feature.set('label', annoLabelInput.value);
       feature.set('details', annoDetailsInput.value);
       feature.set('color', annoColorInput.value);
       feature.set('img_current', annoImgCurrentInput.value);
       feature.set('img_past', annoImgPastInput.value);
-      
-      researchLayer.changed(); // Force redraw with new style/label
+      researchLayer.changed();
       refreshAnnoTable();
       closeAnnoModal();
     });
-
     closeAnnoModalBtn.addEventListener('click', closeAnnoModal);
     annoModal.addEventListener('click', (e) => { if (e.target === annoModal) closeAnnoModal(); });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAnnoModal(); });
 
-    // --- Popup Overlay Logic ---
-    const popupOverlay = new ol.Overlay({
-        element: popupContainer,
-        autoPan: { animation: { duration: 250 } }
-    });
+    // --- Popup Overlay & Metadata Modal ---
+    const popupOverlay = new ol.Overlay({ element: popupContainer, autoPan: { animation: { duration: 250 } } });
     map.addOverlay(popupOverlay);
-
-    popupCloser.onclick = function() {
-        popupOverlay.setPosition(undefined);
-        popupCloser.blur();
-        return false;
-    };
-
-    // Handle clicks on map to open read-only popup
+    popupCloser.onclick = () => { popupOverlay.setPosition(undefined); popupCloser.blur(); return false; };
     map.on('click', (evt) => {
-      if (draw) return; // Don't show popup while drawing
-      
-      const feature = map.forEachFeatureAtPixel(evt.pixel, (f, layer) => {
-        if (layer === researchLayer) return f;
-      });
-
+      if (appState.research.drawInteraction) return;
+      const feature = map.forEachFeatureAtPixel(evt.pixel, (f, layer) => layer === researchLayer ? f : undefined);
       if (feature && !feature.get('hidden')) {
-        const coordinate = evt.coordinate;
         const label = feature.get('label') || 'No Name';
         const details = feature.get('details') || 'No details provided.';
-        const img = feature.get('img_current') || feature.get('img_past');
+        const imgCurrent = feature.get('img_current');
+        const imgPast = feature.get('img_past');
 
-        let content = `<h4>${escHtml(label)}</h4><p>${escHtml(details)}</p>`;
-        if (img) {
-            content += `<img src="${escHtml(img)}" alt="${escHtml(label)}">`;
+        let content = `<h4 class="font-bold text-sm mb-2">${escHtml(label)}</h4><p class="text-xs max-h-16 overflow-y-auto">${escHtml(details)}</p>`;
+        
+        if (imgCurrent || imgPast) {
+          const canFlip = imgCurrent && imgPast;
+          const initialSrc = imgCurrent || imgPast;
+          const initialState = imgCurrent ? 'current' : 'past';
+          content += `<img id="popup-image" src="${escHtml(initialSrc)}" alt="${escHtml(label)}" class="mt-2 rounded-md max-w-full ${canFlip ? 'cursor-pointer' : ''}" ${canFlip ? `data-current-src="${escHtml(imgCurrent)}" data-past-src="${escHtml(imgPast)}" data-state="${initialState}"` : ''}>`;
+          if (canFlip) {
+            content += `<div class="text-center text-xs text-gray-500 mt-1">Click image to flip</div>`;
+          }
         }
+
         popupContent.innerHTML = content;
-        popupOverlay.setPosition(coordinate);
+        popupOverlay.setPosition(evt.coordinate);
+
+        const popupImage = document.getElementById('popup-image');
+        if (popupImage && popupImage.dataset.currentSrc) {
+          popupImage.addEventListener('click', () => {
+            const isCurrent = popupImage.dataset.state === 'current';
+            popupImage.src = isCurrent ? popupImage.dataset.pastSrc : popupImage.dataset.currentSrc;
+            popupImage.dataset.state = isCurrent ? 'past' : 'current';
+          });
+        }
       } else {
         popupOverlay.setPosition(undefined);
       }
     });
 
-    // --- Story Mode Logic ---
+    function openMeta() { if (!metaBtn.disabled) metaModal.classList.remove('hidden'); }
+    function closeMetaFn() { metaModal.classList.add('hidden'); }
+    metaBtn.addEventListener('click', openMeta);
+    closeMeta.addEventListener('click', closeMetaFn);
+    metaModal.addEventListener('click', (e) => { if (e.target === metaModal) closeMetaFn(); });
+
+    // --- Story Mode & Presentation ---
+    function populateSceneAnnotationList(visibleIds = null) {
+        const features = researchSource.getFeatures();
+        sceneAnnotationList.innerHTML = '';
+        if (features.length === 0) {
+            sceneAnnotationList.innerHTML = '<p class="text-xs text-gray-500 p-2">No annotations available to select.</p>';
+            return;
+        }
+        features.forEach(f => {
+            const id = f.getId();
+            const label = f.get('label') || `Feature ${id}`;
+            const isChecked = (visibleIds === null) ? !f.get('hidden') : visibleIds.includes(id);
+            const div = document.createElement('div');
+            div.className = 'flex items-center';
+            div.innerHTML = `
+                <input type="checkbox" id="anno-check-${id}" value="${id}" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" ${isChecked ? 'checked' : ''}>
+                <label for="anno-check-${id}" class="ml-2 block text-sm text-gray-900 truncate" title="${escHtml(label)}">${escHtml(label)}</label>
+            `;
+            sceneAnnotationList.appendChild(div);
+        });
+    }
+
     async function applyScene(scene) {
         if (!scene) return;
-
-        // Set basemap
         setBasemap(scene.basemap);
         basemapSel.value = scene.basemap;
-
-        // Handle overlay map loading/clearing
-        if (scene.overlayId && scene.overlayId !== loadedOverlayId) {
+        if (scene.overlayId && scene.overlayId !== appState.map.loadedOverlayId) {
             await loadAllmaps(scene.overlayId);
-        } else if (!scene.overlayId && (currentMapId || loadedOverlayId)) {
+        } else if (!scene.overlayId && appState.map.currentMapId) {
             warpedMapLayer.clear();
-            currentMapId = null;
-            loadedOverlayId = null;
+            appState.map.currentMapId = null;
+            appState.map.loadedOverlayId = null;
         }
-
-        // Now that the correct map is loaded (or cleared), apply its specific settings
-        if (scene.overlayId && currentMapId) {
+        if (scene.overlayId && appState.map.currentMapId) {
             mapSelector.value = scene.overlayId;
             opacityRange.value = scene.opacity;
             opLabel.textContent = `${Math.round(scene.opacity * 100)}%`;
-            warpedMapLayer.setMapOpacity(currentMapId, scene.opacity);
+            warpedMapLayer.setMapOpacity(appState.map.currentMapId, scene.opacity);
         } else {
             mapSelector.value = '';
         }
-
-        // Restore view mode first, as it may affect rotation
-        sideRatio = scene.sideRatio || 0.5;
-        lensRadius = scene.lensRadius || 150;
+        appState.map.view.sideRatio = scene.sideRatio || 0.5;
+        appState.map.view.lensRadius = scene.lensRadius || 150;
         setMode(scene.viewMode || 'overlay');
-
-        // Animate the view to the new state for a dynamic transition
-        const animationOptions = {
-            center: scene.center,
-            zoom: scene.zoom,
-            duration: 1200, // A bit longer for a more noticeable flight
-            easing: ol.easing.inAndOut // Smoother acceleration/deceleration
-        };
-        // Only apply rotation if the view mode allows it
-        if ((scene.viewMode || 'overlay') === 'overlay') {
-            animationOptions.rotation = scene.rotation || 0;
-        }
-        map.getView().animate(animationOptions);
-
-        // Restore feature visibility
-        researchSource.getFeatures().forEach(f => {
-            const isVisible = scene.visibleFeatures.includes(f.getId());
-            f.set('hidden', !isVisible);
-        });
+        const animOpts = { center: scene.center, zoom: scene.zoom, duration: 1200, easing: ol.easing.inAndOut };
+        if ((scene.viewMode || 'overlay') === 'overlay') animOpts.rotation = scene.rotation || 0;
+        map.getView().animate(animOpts);
+        researchSource.getFeatures().forEach(f => f.set('hidden', !scene.visibleFeatures.includes(f.getId())));
         researchLayer.changed();
         refreshAnnoTable();
     }
-
     function renderStoryPanel() {
         storyList.innerHTML = '';
-        if (story.length === 0) {
-            storyList.appendChild(storyPlaceholder);
-            storyPlaceholder.style.display = 'list-item';
+        const scenes = appState.story.scenes;
+        if (scenes.length === 0) {
+            storyList.innerHTML = `<li class="p-4 text-center text-gray-500">No scenes captured yet.</li>`;
             downloadStoryBtn.disabled = true;
             presentStoryBtn.disabled = true;
             return;
         }
-        storyPlaceholder.style.display = 'none';
         downloadStoryBtn.disabled = false;
         presentStoryBtn.disabled = false;
-
-        story.forEach((scene, index) => {
+        scenes.forEach((scene, index) => {
             const li = document.createElement('li');
+            li.className = 'p-3 flex items-center gap-2';
             const title = scene.title || `Scene ${index + 1}`;
-            li.innerHTML = `<span class="scene-label">${escHtml(title)}</span>`;
-            
+            li.innerHTML = `<span class="flex-grow font-semibold text-gray-700">${escHtml(title)}</span>`;
             const goToBtn = document.createElement('button');
-            goToBtn.textContent = 'Go to';
-            goToBtn.className = 'btn-sm btn-blue';
+            goToBtn.textContent = 'Go';
+            goToBtn.className = 'px-2 py-1 text-xs font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700';
             goToBtn.onclick = () => applyScene(scene);
-
-            const delBtn = document.createElement('button');
-            delBtn.textContent = 'Delete';
-            delBtn.className = 'btn-sm btn-red';
-            delBtn.onclick = () => {
-                if (editingSceneIndex === index) {
-                    exitEditMode(); // Exit edit mode if deleting the edited scene
-                }
-                story.splice(index, 1);
-                renderStoryPanel();
-            };
-
             const editBtn = document.createElement('button');
             editBtn.textContent = 'Edit';
-            editBtn.className = 'btn-sm btn-green';
+            editBtn.className = 'px-2 py-1 text-xs font-semibold text-white bg-green-600 rounded-md hover:bg-green-700';
             editBtn.onclick = () => enterEditMode(index);
-
-            li.appendChild(goToBtn);
-            li.appendChild(editBtn);
-            li.appendChild(delBtn);
+            const delBtn = document.createElement('button');
+            delBtn.textContent = 'Del';
+            delBtn.className = 'px-2 py-1 text-xs font-semibold text-white bg-red-600 rounded-md hover:bg-red-700';
+            delBtn.onclick = () => {
+                if (appState.story.editingSceneIndex === index) exitEditMode();
+                scenes.splice(index, 1);
+                renderStoryPanel();
+            };
+            li.appendChild(goToBtn); li.appendChild(editBtn); li.appendChild(delBtn);
             storyList.appendChild(li);
         });
     }
-
     captureSceneBtn.addEventListener('click', () => {
         const view = map.getView();
-        const visibleFeatures = researchSource.getFeatures()
-            .filter(f => !f.get('hidden'))
-            .map(f => f.getId());
-
+        const visibleFeatures = Array.from(sceneAnnotationList.querySelectorAll('input[type=checkbox]:checked')).map(cb => cb.value);
         const scene = {
-            title: sceneTitleInput.value.trim(),
-            details: sceneDetailsInput.value.trim(),
-            center: view.getCenter(),
-            zoom: view.getZoom(),
-            rotation: view.getRotation(), // Capture rotation
-            basemap: basemapSel.value,
-            overlayId: loadedOverlayId,
-            opacity: parseFloat(opacityRange.value),
-            viewMode: currentMode,
-            sideRatio: sideRatio,
-            lensRadius: lensRadius,
+            title: sceneTitleInput.value.trim(), details: sceneDetailsInput.value.trim(),
+            center: view.getCenter(), zoom: view.getZoom(), rotation: view.getRotation(),
+            basemap: basemapSel.value, overlayId: appState.map.loadedOverlayId,
+            opacity: parseFloat(opacityRange.value), viewMode: appState.map.view.mode,
+            sideRatio: appState.map.view.sideRatio, lensRadius: appState.map.view.lensRadius,
             visibleFeatures: visibleFeatures
         };
-
-        if (editingSceneIndex !== null) {
-            // Update existing scene
-            story[editingSceneIndex] = scene;
+        if (appState.story.editingSceneIndex !== null) {
+            appState.story.scenes[appState.story.editingSceneIndex] = scene;
             exitEditMode();
         } else {
-            // Add new scene
-            story.push(scene);
-            // Clear inputs after capture
+            appState.story.scenes.push(scene);
             sceneTitleInput.value = '';
             sceneDetailsInput.value = '';
         }
-        
         renderStoryPanel();
     });
-
     function enterEditMode(index) {
-        const scene = story[index];
+        const scene = appState.story.scenes[index];
         if (!scene) return;
-
-        editingSceneIndex = index;
-        
-        applyScene(scene); // Move map to the scene's view
-
+        appState.story.editingSceneIndex = index;
+        applyScene(scene);
         sceneTitleInput.value = scene.title || '';
         sceneDetailsInput.value = scene.details || '';
-
         captureSceneBtn.textContent = 'Save Changes';
-        captureSceneBtn.classList.remove('btn-blue');
-        captureSceneBtn.classList.add('btn-green');
-        cancelEditBtn.style.display = 'inline-block';
+        captureSceneBtn.classList.replace('bg-blue-600', 'bg-green-600');
+        cancelEditBtn.classList.remove('hidden');
+        populateSceneAnnotationList(scene.visibleFeatures);
     }
-
     function exitEditMode() {
-        editingSceneIndex = null;
-        
+        appState.story.editingSceneIndex = null;
         sceneTitleInput.value = '';
         sceneDetailsInput.value = '';
-
         captureSceneBtn.textContent = 'Capture Scene';
-        captureSceneBtn.classList.remove('btn-green');
-        captureSceneBtn.classList.add('btn-blue');
-        cancelEditBtn.style.display = 'none';
+        captureSceneBtn.classList.replace('bg-green-600', 'bg-blue-600');
+        cancelEditBtn.classList.add('hidden');
+        populateSceneAnnotationList();
     }
     cancelEditBtn.addEventListener('click', exitEditMode);
-
     downloadStoryBtn.addEventListener('click', () => {
-        if (story.length === 0) return;
-
+        if (appState.story.scenes.length === 0) return;
         const geoJsonFormat = new ol.format.GeoJSON();
-        const allFeatures = researchSource.getFeatures();
-        // Convert all features to a GeoJSON FeatureCollection object
-        const featuresGeoJson = geoJsonFormat.writeFeaturesObject(allFeatures, {
-            featureProjection: 'EPSG:3857' // The map's projection
-        });
-
-        // Create a new story object that includes both features and scenes
-        const storyData = {
-            features: featuresGeoJson,
-            scenes: story
-        };
-
-        const storyJson = JSON.stringify(storyData, null, 2);
-        const blob = new Blob([storyJson], { type: 'application/json;charset=utf-8;' });
+        const featuresGeoJson = geoJsonFormat.writeFeaturesObject(researchSource.getFeatures(), { featureProjection: 'EPSG:3857' });
+        const storyData = { features: featuresGeoJson, scenes: appState.story.scenes };
+        const blob = new Blob([JSON.stringify(storyData, null, 2)], { type: 'application/json;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url;
-        const ts = new Date().toISOString().replace(/[:.]/g, '-');
-        a.download = `story-${ts}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        a.href = url; a.download = `story-${new Date().toISOString().replace(/[:.]/g, '-')}.json`; a.click();
         URL.revokeObjectURL(url);
     });
-
     loadStoryBtn.addEventListener('click', () => loadStoryInput.click());
     loadStoryInput.addEventListener('change', (e) => {
         const file = e.target.files && e.target.files[0];
@@ -1697,108 +1141,71 @@
         reader.onload = () => {
             try {
                 const loadedData = JSON.parse(String(reader.result || '{}'));
-                // Check for the new format with embedded features
                 if (loadedData && loadedData.features && Array.isArray(loadedData.scenes)) {
-                    researchSource.clear(); // Clear existing annotations
-                    const geoJsonFormat = new ol.format.GeoJSON();
-                    const features = geoJsonFormat.readFeatures(loadedData.features, { featureProjection: 'EPSG:3857' });
-                    researchSource.addFeatures(features); // Add the new features
-                    story = loadedData.scenes;
+                    researchSource.clear();
+                    const features = new ol.format.GeoJSON().readFeatures(loadedData.features, { featureProjection: 'EPSG:3857' });
+                    researchSource.addFeatures(features);
+                    appState.story.scenes = loadedData.scenes;
                     renderStoryPanel();
-                } else if (Array.isArray(loadedData)) { // Handle old format for backwards compatibility
-                    story = loadedData;
-                    renderStoryPanel();
-                    alert('Story loaded using old format. Annotations were not included and must be loaded separately.');
-                } else {
-                    alert('Invalid story file format. Expected a JSON file with "scenes" and "features".');
-                }
-            } catch (err) {
-                console.error("Error loading story:", err);
-                alert('Could not parse story file. Make sure it is a valid JSON file.');
-            }
+                } else { alert('Invalid story file format.'); }
+            } catch (err) { alert('Could not parse story file.'); }
             loadStoryInput.value = '';
         };
         reader.readAsText(file);
     });
 
-    // --- Presentation Mode Logic ---
     async function showSlide(index) {
-        if (index < 0 || index >= story.length) return;
-        currentSlideIndex = index;
-        const scene = story[index];
-        
+        if (index < 0 || index >= appState.story.scenes.length) return;
+        appState.story.currentSlideIndex = index;
+        const scene = appState.story.scenes[index];
         await applyScene(scene);
-        
         presentationTitle.textContent = scene.title || `Scene ${index + 1}`;
         presentationDetails.textContent = scene.details || '';
-        presentationCounter.textContent = `${index + 1} / ${story.length}`;
-        
+        presentationCounter.textContent = `${index + 1} / ${appState.story.scenes.length}`;
         presentationPrev.disabled = index === 0;
-        presentationNext.disabled = index === story.length - 1;
+        presentationNext.disabled = index === appState.story.scenes.length - 1;
     }
-
     function startPresentation() {
-        if (story.length === 0) return;
-        presentationOverlay.style.display = 'flex';
-        document.querySelector('.bottombar').style.display = 'none';
+        if (appState.story.scenes.length === 0) return;
+        updateSidebar(true); // Collapse sidebar for presentation
+        presentationOverlay.classList.remove('hidden');
         showSlide(0);
     }
-
     function exitPresentation() {
-        presentationOverlay.style.display = 'none';
-        document.querySelector('.bottombar').style.display = 'flex';
-        currentSlideIndex = -1;
+        presentationOverlay.classList.add('hidden');
+        appState.story.currentSlideIndex = -1;
     }
-
     presentStoryBtn.addEventListener('click', startPresentation);
     presentationExit.addEventListener('click', exitPresentation);
-    presentationNext.addEventListener('click', () => showSlide(currentSlideIndex + 1));
-    presentationPrev.addEventListener('click', () => showSlide(currentSlideIndex - 1));
+    presentationNext.addEventListener('click', () => showSlide(appState.story.currentSlideIndex + 1));
+    presentationPrev.addEventListener('click', () => showSlide(appState.story.currentSlideIndex - 1));
     document.addEventListener('keydown', (e) => {
-        if (presentationOverlay.style.display !== 'flex') return;
-        if (e.key === 'ArrowRight') showSlide(currentSlideIndex + 1);
-        else if (e.key === 'ArrowLeft') showSlide(currentSlideIndex - 1);
+        if (presentationOverlay.classList.contains('hidden')) return;
+        if (e.key === 'ArrowRight') showSlide(appState.story.currentSlideIndex + 1);
+        else if (e.key === 'ArrowLeft') showSlide(appState.story.currentSlideIndex - 1);
         else if (e.key === 'Escape') exitPresentation();
     });
 
-
-    // Nominatim Search
-    function escHtml(s){ return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+    // --- Search Logic (in Research Panel) ---
     function renderSearchItems(items){
-        if (!searchResults) return;
-        if (!items || !items.length){ searchResults.innerHTML = '<div class="small muted">No results.</div>'; return; }
+        if (!items || !items.length){ searchResults.innerHTML = '<div class="p-4 text-center text-sm text-gray-500">No results found.</div>'; return; }
         searchResults.innerHTML = '';
         items.forEach((it) => {
             const div = document.createElement('div');
-            div.className = 'result-item';
+            div.className = 'p-2 border-b border-gray-200 cursor-pointer hover:bg-gray-100 flex items-center gap-2';
             const title = escHtml(it.display_name || `${it.type || ''}`);
-            const sub = escHtml([it.class, it.type, it.category].filter(Boolean).join(' · '));
-            div.innerHTML = `<div class="col-left"><div class="result-title">${title}</div><div class="result-sub">${sub}</div></div><div class="col-right"><button type="button" class="btnAddSearch">Add</button></div>`;
-            div.addEventListener('click', () => zoomToSearchResult(it));
-            const addBtn = div.querySelector('.btnAddSearch');
-            if (addBtn) addBtn.addEventListener('click', (ev) => { ev.stopPropagation(); addResultToAnnotations(it); });
+            div.innerHTML = `<div class="flex-grow min-w-0"><div class="font-semibold text-sm text-gray-800 truncate">${title}</div></div><button type="button" class="add-search-btn px-2 py-1 text-xs font-semibold text-white bg-indigo-600 rounded-md hover:bg-indigo-700">Add</button>`;
+            div.addEventListener('click', (e) => { if(!e.target.classList.contains('add-search-btn')) zoomToSearchResult(it); });
+            div.querySelector('.add-search-btn').addEventListener('click', (ev) => { ev.stopPropagation(); addResultToAnnotations(it); });
             searchResults.appendChild(div);
         });
     }
     function createFeatureFromSearchResult(it) {
         try {
             let feat = null;
-            if (it.geojson) {
-                const gjFmt = new ol.format.GeoJSON();
-                feat = gjFmt.readFeature({ type: 'Feature', geometry: it.geojson }, { dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857' });
-            } else if (it.boundingbox) {
-                const bb = it.boundingbox.map(Number);
-                const extent = [bb[2], bb[0], bb[3], bb[1]];
-                const ext3857 = ol.proj.transformExtent(extent, 'EPSG:4326', 'EPSG:3857');
-                feat = new ol.Feature({ geometry: ol.geom.Polygon.fromExtent(ext3857) });
-            } else if (it.lat && it.lon) {
-                const c = ol.proj.fromLonLat([Number(it.lon), Number(it.lat)]);
-                feat = new ol.Feature({ geometry: new ol.geom.Point(c) });
-            }
-            if (feat) {
-                const lbl = it.display_name || it.name || it.type || '';
-                if (lbl) feat.set('label', lbl);
-            }
+            if (it.geojson) feat = new ol.format.GeoJSON().readFeature({ type: 'Feature', geometry: it.geojson }, { dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857' });
+            else if (it.lat && it.lon) feat = new ol.Feature({ geometry: new ol.geom.Point(ol.proj.fromLonLat([Number(it.lon), Number(it.lat)])) });
+            if (feat) feat.set('label', it.display_name || it.name || '');
             return feat;
         } catch (e) { console.warn("Could not create feature from search result:", e); return null; }
     }
@@ -1808,88 +1215,55 @@
         if (!feat) return;
         searchSource.addFeature(feat);
         const geom = feat.getGeometry();
-        if (geom.getType() === 'Point') {
-            map.getView().animate({ center: geom.getCoordinates(), duration: 400, zoom: Math.max(map.getView().getZoom() || 12, 16) });
-        } else {
-            map.getView().fit(geom.getExtent(), { padding: [80, 20, 20, 20], duration: 400, maxZoom: 18 });
-        }
+        if (geom.getType() === 'Point') map.getView().animate({ center: geom.getCoordinates(), duration: 400, zoom: Math.max(map.getView().getZoom() || 12, 16) });
+        else map.getView().fit(geom.getExtent(), { padding: [80, 80, 80, 80], duration: 400, maxZoom: 18 });
     }
     function addResultToAnnotations(it) {
         const feat = createFeatureFromSearchResult(it);
         if (!feat) return;
         researchSource.addFeature(feat);
         searchSource.clear();
-        if (searchResults) searchResults.innerHTML = '';
-        if (searchQuery) searchQuery.value = '';
+        searchResults.innerHTML = '<div class="p-4 text-center text-sm text-gray-500">Feature added to annotations.</div>';
+        searchQuery.value = '';
     }
-    let searchAbort = null, searchTimer = null, lastSearchTime = 0;
     const MIN_SEARCH_INTERVAL = 1000;
     async function runSearchNow() {
         const q = (searchQuery?.value || '').trim();
-        if (!q) { if (searchResults) searchResults.innerHTML = '<div class="small muted">Enter a place or address.</div>'; return; }
-        if (searchAbort) { try { searchAbort.abort(); } catch (_) { } }
-        searchAbort = new AbortController();
-        if (searchResults) searchResults.innerHTML = '<div class="small muted">Searching…</div>';
+        if (!q) { searchResults.innerHTML = '<div class="p-4 text-center text-sm text-gray-500">Enter a place or address to search.</div>'; return; }
+        if (appState.search.abortController) appState.search.abortController.abort();
+        appState.search.abortController = new AbortController();
+        searchResults.innerHTML = '<div class="p-4 text-center text-sm text-gray-500">Searching...</div>';
         try {
-            const params = new URLSearchParams({ format: 'jsonv2', q, addressdetails: '1', namedetails: '1', polygon_geojson: '1', limit: '10' });
-            const nominatimUrl = `https://nominatim.openstreetmap.org/search?${params}`;
-            const res = await fetch(nominatimUrl, { headers: { 'Accept': 'application/json' }, signal: searchAbort.signal });
+            const params = new URLSearchParams({ format: 'jsonv2', q, addressdetails: '1', polygon_geojson: '1', limit: '10' });
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, { signal: appState.search.abortController.signal });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const data = await res.json();
-            renderSearchItems(Array.isArray(data) ? data : []);
+            renderSearchItems(await res.json());
         } catch (err) {
-            if (err.name === 'AbortError') return;
-            console.error('Search error:', err);
-            if (searchResults) searchResults.innerHTML = '<div class="small error">Search failed. Please try again later.</div>';
+            if (err.name !== 'AbortError') searchResults.innerHTML = '<div class="p-4 text-center text-sm text-red-600">Search failed.</div>';
         }
     }
     function queueSearch() {
-        if (searchTimer) clearTimeout(searchTimer);
+        if (appState.search.timer) clearTimeout(appState.search.timer);
         const now = Date.now();
-        const wait = Math.max(0, MIN_SEARCH_INTERVAL - (now - lastSearchTime));
-        searchTimer = setTimeout(() => { lastSearchTime = Date.now(); runSearchNow(); }, wait + 400);
+        const wait = Math.max(0, MIN_SEARCH_INTERVAL - (now - appState.search.lastSearchTime));
+        appState.search.timer = setTimeout(() => { appState.search.lastSearchTime = now; runSearchNow(); }, wait + 400);
     }
-    if (searchQuery) {
-        searchQuery.addEventListener('input', queueSearch);
-        searchQuery.addEventListener('keydown', (e) => { if (e.key === 'Enter') runSearchNow(); });
-    }
-    if (searchClearBtn) searchClearBtn.addEventListener('click', () => {
-        if (searchAbort) { try { searchAbort.abort(); } catch (_) { } }
-        if (searchResults) searchResults.innerHTML = '';
-        searchSource.clear();
-        if (searchQuery) searchQuery.value = '';
-    });
-    // Geolocation
-    function locateMe() {
-        if (!('geolocation' in navigator) || (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1')) {
-            if (searchResults) searchResults.innerHTML = '<div class="small error">Geolocation requires a secure connection (HTTPS).</div>';
-            return;
-        }
-        if (searchResults) searchResults.innerHTML = '<div class="small muted">Locating…</div>';
-        navigator.geolocation.getCurrentPosition((pos) => {
-            const { latitude: lat, longitude: lon, accuracy } = pos.coords || {};
-            const center = ol.proj.fromLonLat([Number(lon), Number(lat)]);
+    searchQuery.addEventListener('input', queueSearch);
+    searchLocate.addEventListener('click', () => {
+        if (!('geolocation' in navigator)) { alert('Geolocation is not supported.'); return; }
+        searchResults.innerHTML = '<div class="p-4 text-center text-sm text-gray-500">Locating...</div>';
+        navigator.geolocation.getCurrentPosition(pos => {
+            const center = ol.proj.fromLonLat([pos.coords.longitude, pos.coords.latitude]);
             searchSource.clear();
             searchSource.addFeature(new ol.Feature({ geometry: new ol.geom.Point(center) }));
-            if (Number.isFinite(accuracy) && accuracy > 0) {
-                searchSource.addFeature(new ol.Feature({ geometry: new ol.geom.Circle(center, accuracy) }));
-            }
             map.getView().animate({ center, duration: 500, zoom: Math.max(map.getView().getZoom() || 12, 16) });
-            if (searchResults) searchResults.innerHTML = '<div class="small ok">Centered on your location.</div>';
-        }, (err) => {
-            let msg = 'Could not get your location.';
-            if (err && typeof err.code === 'number') {
-                if (err.code === 1) msg = 'Permission denied. Please allow location access.';
-                else if (err.code === 2) msg = 'Position unavailable. Try again.';
-                else if (err.code === 3) msg = 'Location request timed out. Please retry.';
-            }
-            if (searchResults) searchResults.innerHTML = `<div class="small error">${msg}</div>`;
-        }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 });
-    }
-    if (searchLocate) searchLocate.addEventListener('click', locateMe);
+            searchResults.innerHTML = '<div class="p-4 text-center text-sm text-green-600">Centered on your location.</div>';
+        }, err => {
+            searchResults.innerHTML = `<div class="p-4 text-center text-sm text-red-600">Could not get location: ${err.message}</div>`;
+        });
+    });
 
-    // CSV export / import for annotations
-    const wktFormat = new ol.format.WKT();
+    // --- CSV Import/Export Functions ---
     const geoJsonFormat = new ol.format.GeoJSON();
     function csvEscape(val) {
         if (val == null) return '';
@@ -1898,363 +1272,157 @@
         return s;
     }
     function featureToCsvRow(f) {
-        const id = f.getId() || '';
-        const geom = f.getGeometry();
-        const type = geom.getType();
-        const label = f.get('label') || '';
-        const details = f.get('details') || '';
-        const color = f.get('color') || '#2563eb';
-        const img_current = f.get('img_current') || '';
-        const img_past = f.get('img_past') || '';
-        const geojsonGeom = geoJsonFormat.writeGeometryObject(geom, { featureProjection: 'EPSG:3857' });
-        const geojson = JSON.stringify(geojsonGeom);
-        return [id, type, label, details, color, img_current, img_past, geojson].map(csvEscape).join(',');
+        const geojson = JSON.stringify(geoJsonFormat.writeGeometryObject(f.getGeometry(), { featureProjection: 'EPSG:3857' }));
+        return [f.getId() || '', f.getGeometry().getType(), f.get('label') || '', f.get('details') || '', f.get('color') || '#2563eb', f.get('img_current') || '', f.get('img_past') || '', geojson].map(csvEscape).join(',');
     }
     function downloadCsv() {
         const header = 'id,type,label,details,color,img_current,img_past,geojson';
-        const rows = researchSource.getFeatures().map(featureToCsvRow);
-        const csv = [header].concat(rows).join('\r\n');
+        const csv = [header].concat(researchSource.getFeatures().map(featureToCsvRow)).join('\r\n');
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url;
-        const ts = new Date().toISOString().replace(/[:.]/g, '-');
-        a.download = `annotations-${ts}.csv`;
-        document.body.appendChild(a);
+        a.href = url; a.download = `annotations-${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
         a.click();
-        document.body.removeChild(a);
         URL.revokeObjectURL(url);
     }
     function parseCsvLine(line) {
-        const out = []; let cur = ''; let i = 0; const n = line.length; let inQ = false;
-        while (i < n) {
+        const out = []; let cur = ''; let i = 0; let inQ = false;
+        while (i < line.length) {
             const ch = line[i++];
-            if (inQ) {
-                if (ch === '"') {
-                    if (i < n && line[i] === '"') { cur += '"'; i++; } else { inQ = false; }
-                } else { cur += ch; }
-            } else {
-                if (ch === ',') { out.push(cur); cur = ''; }
-                else if (ch === '"') { inQ = true; }
-                else { cur += ch; }
-            }
+            if (inQ) { if (ch === '"') { if (i < line.length && line[i] === '"') { cur += '"'; i++; } else { inQ = false; } } else { cur += ch; } }
+            else { if (ch === ',') { out.push(cur); cur = ''; } else if (ch === '"') { inQ = true; } else { cur += ch; } }
         }
         out.push(cur);
         return out;
     }
     function importCsv(text) {
         const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
-        if (!lines.length) return 0;
-        
-        const headerLine = lines.shift();
-        const header = parseCsvLine(headerLine).map(h => h.trim().toLowerCase());
-        
+        if (!lines.length) return;
+        const header = parseCsvLine(lines.shift()).map(h => h.trim().toLowerCase());
         const geojsonIndex = header.indexOf('geojson');
-        const wktIndex = header.indexOf('wkt');
-
-        if (geojsonIndex === -1 && wktIndex === -1) {
-            alert("Import failed: CSV file must contain a 'geojson' or 'wkt' column for geometry data.");
-            console.error("CSV must have a 'geojson' or 'wkt' column.");
-            return 0;
-        }
-
-        const isWkt = geojsonIndex === -1;
-        const geomIndex = isWkt ? wktIndex : geojsonIndex;
-
-        const colMap = {
-            id: header.indexOf('id'),
-            type: header.indexOf('type'),
-            label: header.indexOf('label'),
-            details: header.indexOf('details'),
-            color: header.indexOf('color'),
-            img_current: header.indexOf('img_current'),
-            img_past: header.indexOf('img_past'),
-        };
-
-        let count = 0;
+        if (geojsonIndex === -1) { alert("Import failed: CSV must contain a 'geojson' column."); return; }
+        const colMap = { id: 'id', label: 'label', details: 'details', color: 'color', img_current: 'img_current', img_past: 'img_past' };
         for (const line of lines) {
             const cols = parseCsvLine(line);
-            const geomStr = cols[geomIndex];
-            if (!geomStr) continue;
-
-            let geom;
+            if (!cols[geojsonIndex]) continue;
             try {
-                if (isWkt) {
-                    geom = wktFormat.readGeometry(geomStr);
-                } else {
-                    const geojsonGeom = JSON.parse(geomStr);
-                    geom = geoJsonFormat.readGeometry(geojsonGeom, { featureProjection: 'EPSG:3857' });
-                }
-            } catch (_) { continue; }
-            
-            const feat = new ol.Feature({ geometry: geom });
-
-            for (const prop in colMap) {
-                if (colMap[prop] !== -1 && cols[colMap[prop]]) {
-                    if (prop !== 'id') {
-                        feat.set(prop, cols[colMap[prop]]);
+                const geom = geoJsonFormat.readGeometry(JSON.parse(cols[geojsonIndex]), { featureProjection: 'EPSG:3857' });
+                const feat = new ol.Feature({ geometry: geom });
+                for (const prop in colMap) {
+                    const idx = header.indexOf(prop);
+                    if (idx !== -1 && cols[idx]) {
+                        if (prop !== 'id') feat.set(prop, cols[idx]);
                     }
                 }
-            }
-
-            let id = (colMap.id !== -1 && cols[colMap.id]) ? cols[colMap.id].trim() : null;
-            if (id && researchSource.getFeatureById(id)) {
-                let k = 1; let nid = id + '-' + k;
-                while (researchSource.getFeatureById(nid)) { k++; nid = id + '-' + k; }
-                id = nid;
-            }
-            if (id) feat.setId(id); else getOrAssignId(feat);
-
-            researchSource.addFeature(feat);
-            count++;
+                let id = cols[header.indexOf('id')]?.trim();
+                if (id) feat.setId(id); else getOrAssignId(feat);
+                researchSource.addFeature(feat);
+            } catch (_) {}
         }
-        return count;
     }
-    if (exportCsvBtn) exportCsvBtn.addEventListener('click', downloadCsv);
-    if (importCsvBtn && importCsvInput) {
-        importCsvBtn.addEventListener('click', () => importCsvInput.click());
-        importCsvInput.addEventListener('change', (e) => {
-            const file = e.target.files && e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = () => {
-                const text = String(reader.result || '');
-                importCsv(text);
-                importCsvInput.value = '';
-            };
-            reader.readAsText(file);
-        });
-    }
+    exportCsvBtn.addEventListener('click', downloadCsv);
+    importCsvBtn.addEventListener('click', () => importCsvInput.click());
+    importCsvInput.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => { importCsv(String(reader.result || '')); importCsvInput.value = ''; };
+        reader.readAsText(file);
+    });
 
-    // Right-click coordinates popup
-    function hideCoordMenu(){ if (coordMenu){ coordMenu.style.display='none'; } }
-    function openCoordMenu(lon, lat, clientX, clientY){
-        if (!coordMenu) return;
+    // --- Right-click & Utility Functions ---
+    function hideCoordMenu(){ if (coordMenu) coordMenu.classList.add('hidden'); }
+    map.getViewport().addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        const coord = map.getCoordinateFromPixel(map.getEventPixel(e));
+        if (!coord) return;
+        const [lon, lat] = ol.proj.toLonLat(coord, 'EPSG:3857');
         coordValue.textContent = `${lon.toFixed(6)}, ${lat.toFixed(6)}`;
-        coordMenu.style.display = 'block';
-        const pad = 8;
-        const vw = window.innerWidth || document.documentElement.clientWidth;
-        const vh = window.innerHeight || document.documentElement.clientHeight;
-        const rect = coordMenu.getBoundingClientRect();
-        let left = clientX + 4;
-        let top  = clientY + 4;
-        if (left + rect.width + pad > vw) left = Math.max(pad, vw - rect.width - pad);
-        if (top  + rect.height + pad > vh) top  = Math.max(pad, clientY - rect.height - 4);
-        coordMenu.style.left = Math.max(pad, left) + 'px';
-        coordMenu.style.top  = Math.max(pad, top)  + 'px';
-    }
-    if (map && typeof map.getViewport === 'function') {
-        map.getViewport().addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            const pixel = map.getEventPixel(e);
-            const coord = map.getCoordinateFromPixel(pixel);
-            if (!coord) return;
-            const [lon, lat] = ol.proj.toLonLat(coord, 'EPSG:3857');
-            openCoordMenu(lon, lat, e.clientX, e.clientY);
-        });
-    }
-    async function copyText(txt){
-        try {
-            await navigator.clipboard.writeText(txt);
-            return true;
-        } catch(_) {}
-        const t = document.createElement('textarea');
-        t.value = txt; t.style.position='fixed'; t.style.left='-9999px';
-        document.body.appendChild(t); t.select();
-        let ok = false;
-        try { ok = document.execCommand('copy'); } catch(_){}
-        document.body.removeChild(t);
-        return ok;
-    }
+        coordMenu.classList.remove('hidden');
+        coordMenu.style.left = `${e.clientX + 4}px`;
+        coordMenu.style.top = `${e.clientY + 4}px`;
+    });
     async function doCopy(el, val){
         if (!val || val === '—') return;
-        const ok = await copyText(val);
+        await navigator.clipboard.writeText(val);
         const old = el.textContent;
-        el.textContent = ok ? 'Copied!' : 'Failed';
+        el.textContent = 'Copied!';
         setTimeout(() => el.textContent = old, 900);
     }
-    if (coordCopy) coordCopy.addEventListener('click', () => doCopy(coordCopy, coordValue.textContent));
-    if (coordValue) coordValue.addEventListener('click', () => doCopy(coordValue, coordValue.textContent));
-    if (coordClose) coordClose.addEventListener('click', hideCoordMenu);
-    document.addEventListener('pointerdown', (e) => {
-        if (coordMenu && coordMenu.style.display==='block' && !coordMenu.contains(e.target)) {
-            hideCoordMenu();
-        }
-    });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideCoordMenu(); });
+    coordCopy.addEventListener('click', () => doCopy(coordCopy, coordValue.textContent));
+    coordValue.addEventListener('click', () => doCopy(coordValue, coordValue.textContent));
+    coordClose.addEventListener('click', hideCoordMenu);
+    document.addEventListener('pointerdown', (e) => { if (!coordMenu.classList.contains('hidden') && !coordMenu.contains(e.target)) hideCoordMenu(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { hideCoordMenu(); closeMetaFn(); closeAnnoModal(); exitPresentation(); } });
 
-    // Metadata summary renderer
-    const esc = (s) => String(s==null?'':s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
-    const fmtNum = (n) => (typeof n === 'number' ? n.toLocaleString() : n);
-    const fmtArea = (a) => {
-      if (typeof a !== 'number') return a;
-      if (a >= 1_000_000) return `${(a/1_000_000).toLocaleString(undefined,{maximumFractionDigits:2})} km²`;
-      return `${a.toLocaleString(undefined,{maximumFractionDigits:0})} m²`;
-    };
-    const fmtDate = (d) => { try { return new Date(d).toLocaleString(); } catch { return d; } };
-    const short = (s, len=48) => {
-      if (!s) return s;
-      const str = String(s);
-      return str.length > len ? esc(str.slice(0, len-1)) + '…' : esc(str);
-    };
-    function extractLabel(obj) {
-      if (!obj) return undefined;
-      const lbl = obj?.label;
-      if (typeof lbl === 'string') return lbl;
-      if (lbl && typeof lbl === 'object') {
-        if (Array.isArray(lbl.none) && lbl.none[0]) return lbl.none[0];
-        if (Array.isArray(lbl.en) && lbl.en[0]) return lbl.en[0];
-      }
-      const part = obj?.partOf;
-      if (Array.isArray(part) && part[0]) return extractLabel(part[0]) || extractLabel(part[0]?.partOf?.[0]);
-      return undefined;
-    }
-    function buildSummaryHTML(props, feature, extent4326) {
-        if (!props) return '–';
-        const rows = [];
-        const title = extractLabel(props.resource) || extractLabel(props) || undefined;
-        if (title) rows.push(['Title', title]);
-        if (props.type) rows.push(['Type', props.type]);
-        if (props.created) rows.push(['Created', fmtDate(props.created)]);
-        if (props.modified) rows.push(['Modified', fmtDate(props.modified)]);
-        const res = props.resource || {};
-        if (res.id) rows.push(['Resource', `<a class="link" href="${esc(res.id)}" target="_blank" rel="noreferrer">${short(res.id)}</a>`]);
-        if (typeof res.width === 'number' || typeof res.height === 'number') {
-            rows.push(['Dimensions', `${fmtNum(res.width)} × ${fmtNum(res.height)} px`]);
-        }
-        const canvas = Array.isArray(res.partOf) && res.partOf[0] ? res.partOf[0] : undefined;
-        if (canvas?.id) rows.push(['Canvas', `<a class="link" href="${esc(canvas.id)}" target="_blank" rel="noreferrer">${short(canvas.id)}</a>`]);
-        const manifest = canvas?.partOf && Array.isArray(canvas.partOf) ? canvas.partOf[0] : undefined;
-        if (manifest?.id) rows.push(['Manifest', `<a class="link" href="${esc(manifest.id)}" target="_blank" rel="noreferrer">${short(manifest.id)}</a>`]);
-        const tr = props.transformation;
-        if (tr?.type) {
-            const order = tr?.options?.order != null ? ` (order ${tr.options.order})` : '';
-            rows.push(['Transformation', `${esc(tr.type)}${order}`]);
-        }
-        const gcpCount = Array.isArray(props.gcps) ? props.gcps.length : undefined;
-        if (gcpCount != null) rows.push(['GCPs', `${fmtNum(gcpCount)}`]);
-        if (extent4326) {
-            const [minX, minY, maxX, maxY] = extent4326;
-            rows.push(['Extent (lon/lat)', `${minX.toFixed(4)}, ${minY.toFixed(4)} → ${maxX.toFixed(4)}, ${maxY.toFixed(4)}`]);
-            rows.push(['Center', `${((minX + maxX) / 2).toFixed(5)}, ${((minY + maxY) / 2).toFixed(5)}`]);
-        }
-        if (props.id) rows.push(['Annotation ID', `<a class="link" href="${esc(props.id)}" target="_blank" rel="noreferrer">${short(props.id)}</a>`]);
-        return `<div class="kvgrid">${rows.map(([k, v]) => `<div class="kv-key">${esc(k)}</div><div class="kv-val">${v}</div>`).join('')}</div>`;
-    }
+    // --- Metadata Summary Renderer ---
     function renderMetadataSummary(annotation, feature, extent3857) {
-        if (!metaSummary) return;
-        try {
-            const props = annotation || null;
-            const extent4326 = extent3857 ? ol.proj.transformExtent(extent3857, 'EPSG:3857', 'EPSG:4326') : null;
-            metaSummary.innerHTML = buildSummaryHTML(props, feature, extent4326) || '–';
-        } catch (e) {
-            console.error(e);
-            metaSummary.textContent = 'Could not render summary.';
-        }
+      const props = annotation || {};
+      const extent4326 = extent3857 ? ol.proj.transformExtent(extent3857, 'EPSG:3857', 'EPSG:4326') : null;
+      const fmtDate = (d) => { try { return new Date(d).toLocaleString(); } catch { return d; } };
+      const rows = [];
+      const addRow = (k, v) => v && rows.push(`<div class="font-semibold text-gray-600">${k}</div><div class="break-words">${v}</div>`);
+      addRow('Type', props.type);
+      addRow('Created', fmtDate(props.created));
+      if (props.resource?.id) addRow('Resource', `<a class="text-indigo-600 hover:underline" href="${escHtml(props.resource.id)}" target="_blank">${escHtml(props.resource.id)}</a>`);
+      if (props.resource?.width) addRow('Dimensions', `${props.resource.width} x ${props.resource.height} px`);
+      if (extent4326) addRow('Extent (lon/lat)', `${extent4326[0].toFixed(4)}, ${extent4326[1].toFixed(4)} → ${extent4326[2].toFixed(4)}, ${extent4326[3].toFixed(4)}`);
+      metaSummary.innerHTML = `<div class="grid grid-cols-[max-content,1fr] gap-x-4 gap-y-2">${rows.join('')}</div>`;
     }
 
-    // --- Initialization from Google Sheet ---
+    // --- App Initialization ---
     async function initializeApp() {
-      // 1. PASTE YOUR GOOGLE SHEET URL HERE
-      // Instructions: In Google Sheets, go to File > Share > Publish to web.
-      // Select your sheet, choose "Comma-separated values (.csv)", and publish.
-      // Copy the generated URL and paste it below.
       const googleSheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQivs6N80xA_Pgs0J8MMMTGcH4YLzjhhyxPUoMcoQTxHjUyRXo5FMOICXDSxayDcLYisABkoqvXiIiA/pub?output=csv';
+      try {
+        const response = await fetch(googleSheetUrl);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const csvText = await response.text();
+        const lines = csvText.trim().split(/\r?\n/);
+        const header = lines.shift().split(',').map(h => h.trim().toLowerCase());
+        const nameIndex = header.indexOf('name');
+        const idIndex = header.indexOf('id');
+        if (nameIndex === -1 || idIndex === -1) throw new Error("CSV must have 'name' and 'id' columns.");
 
-      async function loadMapDatasetFromSheet(url) {
-        if (url.includes('YOUR_SHEET_ID')) {
-          console.warn("Google Sheet URL is a placeholder. Please replace it in the script.");
-          if (statusEl) {
-            statusEl.textContent = 'Please configure the Google Sheet URL in the HTML file.';
-            statusEl.className = 'small error';
-          }
-          return [];
-        }
-        try {
-          const response = await fetch(url);
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          const csvText = await response.text();
-          const lines = csvText.trim().split(/\r?\n/);
-          const header = lines.shift().split(',').map(h => h.trim().toLowerCase());
-          const nameIndex = header.indexOf('name');
-          const idIndex = header.indexOf('id');
-          if (nameIndex === -1 || idIndex === -1) throw new Error("CSV must have 'name' and 'id' columns.");
+        const maps = lines.map(line => {
+          const values = line.match(/(".*?"|[^",\r\n]+)(?=\s*,|\s*$)/g) || [];
+          const name = (values[nameIndex] || '').replace(/"/g, '').trim();
+          const id = (values[idIndex] || '').replace(/"/g, '').trim();
+          return (name && id) ? { name, id } : null;
+        }).filter(Boolean);
 
-          const maps = lines.map(line => {
-            const values = line.match(/(".*?"|[^",\r\n]+)(?=\s*,|\s*$)/g) || [];
-            const name = (values[nameIndex] || '').replace(/"/g, '').trim();
-            const id = (values[idIndex] || '').replace(/"/g, '').trim();
-            return (name && id) ? { name, id } : null;
-          }).filter(Boolean);
-
-          return maps;
-        } catch (error) {
-          console.error("Could not load map dataset from Google Sheet:", error);
-          if (statusEl) {
-            statusEl.textContent = 'Failed to load map list from Google Sheet.';
-            statusEl.className = 'small error';
-          }
-          return [];
-        }
-      }
-
-      const mapDataset = await loadMapDatasetFromSheet(googleSheetUrl);
-
-      function populateMapSelector() {
-        if (!mapSelector) return;
         mapSelector.innerHTML = '<option value="" disabled selected>Select a map from the list...</option>';
-        mapDataset.forEach(map => {
+        maps.forEach(map => {
           const option = document.createElement('option');
           option.value = map.id;
           option.textContent = map.name;
           mapSelector.appendChild(option);
         });
-      }
 
-      mapSelector.addEventListener('change', () => {
-        const selectedId = mapSelector.value;
-        if (selectedId) {
-          loadAllmaps(selectedId);
-          if (customMapIdInput) customMapIdInput.value = '';
+        const qid = new URL(location.href).searchParams.get('id');
+        const idToLoad = qid && maps.some(m => m.id === qid) ? qid : (maps[0]?.id || null);
+
+        if (idToLoad) {
+          mapSelector.value = idToLoad;
+          loadAllmaps(idToLoad);
+        } else if (statusEl) {
+          statusEl.textContent = 'No maps found in the list.';
         }
-      });
-
-      if (loadCustomBtn && customMapIdInput) {
-        const loadFromInput = () => {
-          const id = customMapIdInput.value.trim();
-          if (id) {
-            loadAllmaps(id);
-            mapSelector.value = ''; // Deselect dropdown
-          }
-        };
-        loadCustomBtn.addEventListener('click', loadFromInput);
-        customMapIdInput.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') loadFromInput();
-        });
-      }
-
-      populateMapSelector();
-
-      // Auto-load logic: use URL param `id` if valid, otherwise load the first map in the list.
-      const u = new URL(location.href);
-      const qid = u.searchParams.get('id');
-      let idToLoad = null;
-
-      if (qid && mapDataset.some(m => m.id === qid)) {
-        idToLoad = qid;
-      } else if (mapDataset.length > 0) {
-        idToLoad = mapDataset[0].id;
-      }
-
-      if (idToLoad) {
-        mapSelector.value = idToLoad;
-        loadAllmaps(idToLoad);
-      } else if (mapDataset.length === 0 && !statusEl.textContent) {
-        if (statusEl) statusEl.textContent = 'No maps found in the provided list.';
+      } catch (error) {
+        console.error("Could not load map dataset:", error);
+        if (statusEl) {
+          statusEl.textContent = 'Failed to load map list.';
+          statusEl.classList.add('text-red-600');
+        }
       }
     }
 
+    // --- Initial Run ---
+    const isInitiallyMobile = window.innerWidth < 768;
+    updateSidebar(isInitiallyMobile);
+    showTab('Map');
+    refreshAnnoTable();
     initializeApp().catch(console.error);
+    
   </script>
 </body>
 </html>
