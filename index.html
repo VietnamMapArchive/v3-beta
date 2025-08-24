@@ -105,7 +105,7 @@
       
       <nav class="hidden md:flex border-b border-gray-200 bg-gray-100 collapsible-content">
         <button data-tab="Map" class="tab-btn-desktop active flex-1 p-3 text-sm font-semibold text-center text-gray-500 hover:bg-gray-200 transition-colors">Map</button>
-        <button data-tab="Annotations" class="tab-btn-desktop flex-1 p-3 text-sm font-semibold text-center text-gray-500 hover:bg-gray-200 transition-colors">Annotations</button>
+        <button data-tab="Annotations" class="tab-btn-desktop flex-1 p-3 text-sm font-semibold text-center text-gray-500 hover:bg-gray-200 transition-colors">Annotation</button>
         <button data-tab="Story" class="tab-btn-desktop flex-1 p-3 text-sm font-semibold text-center text-gray-500 hover:bg-gray-200 transition-colors">Story</button>
         <button data-tab="Info" class="tab-btn-desktop flex-1 p-3 text-sm font-semibold text-center text-gray-500 hover:bg-gray-200 transition-colors">Info</button>
       </nav>
@@ -241,13 +241,19 @@
           </div>
           <div class="space-y-2 text-sm text-gray-700">
             <h3 class="font-bold text-base">Tips & Shortcuts</h3>
-            <ul class="list-disc list-inside space-y-2">
-              <li><b>Rotate map:</b> hold <b>Ctrl/⌘</b> and drag. Click compass to reset north.</li>
-              <li><b>View modes:</b> Use the selector for different views. Drag handles to resize.</li>
-              <li><b>Annotations:</b> Press <b>Enter</b> to finish drawing, <b>Esc</b> to cancel.</li>
-              <li><b>Coordinates:</b> Right-click map to show lon,lat coordinates.</li>
-              <li><b>Stories:</b> Go to the Story tab, set up your map view and visible annotations, then click 'Capture Scene'. You can present, load, or download your story.</li>
-            </ul>
+            <ul class="list-disc list-inside space-y-2 text-gray-600">
+              <li><b>Navigation:</b> Pan by dragging and zoom with the scroll wheel. Hold <b>Ctrl/⌘</b> and drag to rotate the map. Click the compass icon to reset to North-up.</li>
+              <li><b>Sidebar:</b> Click the arrow button on the edge of the sidebar to collapse or expand it for more map space.</li>
+              <li><b>View Modes:</b> Switch between <b>Overlay</b>, <b>Side-by-Side</b>, and <b>Spyglass</b> views. In the latter two modes, drag the small handles on the map to adjust the view.</li>
+              <li><b>Annotations:</b> Use the tools to draw points, lines, or objects. Click a feature on the map to see its details, or use the table to <b>Edit</b>, <b>Hide</b>, or <b>Delete</b> it. Press <b>Enter</b> to finish drawing a line/object, or <b>Esc</b> to cancel.</li>
+              <li><b>Stories:</b> Create a narrative by capturing scenes. Each scene saves the map view, overlay, and visible annotations. You can then <b>Present</b> your story as a slideshow, or <b>Save</b> it to a file to share.</li>
+              <li><b>Data Persistence:</b> Your annotations and story scenes are saved automatically in your browser. Use the <b>Save/Load</b> buttons in the Annotation and Story panels to export your work to a file or import from one.</li>
+              <li><b>Coordinates:</b> Right-click anywhere on the map to see the coordinates for that location. Click the value to copy it to your clipboard.</li>
+             </ul>
+          </div>
+          <div class="pt-4 border-t border-gray-200">
+            <button id="clearStateBtn" class="w-full px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded-md hover:bg-red-700">Clear Saved State & Reload</button>
+            <p class="text-xs text-gray-500 mt-2">This will remove all saved annotations, story scenes, and view settings from your browser.</p>
           </div>
            <div class="text-center text-xs text-gray-400 pt-4 border-t">Built with OpenLayers, Allmaps & OSM</div>
         </div>
@@ -315,7 +321,7 @@
     </div>
   </div>
 
-  <div id="metaModal" class="hidden fixed inset-0 bg-gray-900/60 z-30 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="metaTitle">
+  <div id="metaModal" class="hidden fixed inset-0 bg-gray-900/60 z-3[1050] flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="metaTitle">
     <div class="bg-white rounded-lg shadow-xl max-w-2xl w-[90vw] max-h-[80vh] flex flex-col">
       <div class="flex items-center justify-between p-4 border-b">
         <h3 id="metaTitle" class="text-lg font-bold text-gray-800">Map Metadata</h3>
@@ -329,7 +335,7 @@
     </div>
   </div>
 
-  <div id="annoModal" class="hidden fixed inset-0 bg-gray-900/60 z-30 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="annoTitle">
+  <div id="annoModal" class="hidden fixed inset-0 bg-gray-900/60 z-[1050] flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="annoTitle">
     <div class="bg-white rounded-lg shadow-xl max-w-lg w-[90vw] max-h-[80vh] flex flex-col">
       <div class="flex items-center justify-between p-4 border-b">
         <h3 id="annoTitle" class="text-lg font-bold text-gray-800">Edit Annotation</h3>
@@ -367,6 +373,7 @@
 
 
   <script>
+    const APP_STATE_KEY = 'vmaMapViewerState';
     // --- App State Management ---
     const appState = {
       map: {
@@ -392,8 +399,9 @@
       },
       story: {
         scenes: [],
-        currentSlideIndex: -1,
         editingSceneIndex: null,
+        presentationScenes: [],
+        currentPresentationIndex: -1,
       },
       search: {
         abortController: null,
@@ -581,6 +589,7 @@
     const presentationPrev = document.getElementById('presentation-prev');
     const presentationNext = document.getElementById('presentation-next');
     const presentationExit = document.getElementById('presentation-exit');
+    const clearStateBtn = document.getElementById('clearStateBtn');
 
     // --- Sidebar & UI Functions ---
     function updateSidebarPosition() {
@@ -636,7 +645,7 @@
     function setBasemap(name) {
       [esriImageryLayer, googleStreets, googleSatellite].forEach(l => l.setVisible(l.getProperties().name === name));
     }
-    basemapSel.addEventListener('change', () => setBasemap(basemapSel.value));
+    basemapSel.addEventListener('change', () => { setBasemap(basemapSel.value); queueSaveState(); });
 
     function hasInteraction(i){ return map.getInteractions().getArray().includes(i); }
     function enableRotateInteractions(on){
@@ -694,6 +703,7 @@
         
         const opacity = parseFloat(opacityRange.value);
         warpedMapLayer.setMapOpacity(appState.map.currentMapId, opacity);
+        queueSaveState();
 
       } catch (err) {
         if (err.name === 'AbortError') return;
@@ -724,6 +734,12 @@
     customMapIdInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') loadFromInput(); });
 
     // --- View Mode & Opacity ---
+    function setViewOverlaysPointerEvents(value) {
+        const elements = [dividerHandleX, dividerHandleY, lensHandle];
+        elements.forEach(el => {
+            if (el) el.style.pointerEvents = value;
+        });
+    }
     function mapSize() { return map.getSize() || [0,0]; }
     function updateClipPath() {
         const canvas = warpedMapLayer.getCanvas();
@@ -744,6 +760,7 @@
       updateClipPath();
       updateDividersAndHandles();
       updateLensAndHandle();
+      queueSaveState();
     }
     viewModeSel.addEventListener('change', () => setMode(viewModeSel.value));
     opacityRange.addEventListener('input', () => {
@@ -752,6 +769,7 @@
       if (appState.map.currentMapId) {
         warpedMapLayer.setMapOpacity(appState.map.currentMapId, v);
       }
+      queueSaveState();
     });
     map.on(['moveend', 'change:size'], () => {
         updateClipPath();
@@ -777,7 +795,13 @@
       }
       updateClipPath();
     }
-    function stopDrag(){ appState.map.dragging = { sideX:false, sideY:false, lensR:false }; }
+    function stopDrag(){
+      const wasDragging = Object.values(appState.map.dragging).some(Boolean);
+      appState.map.dragging = { sideX:false, sideY:false, lensR:false };
+      if (wasDragging) {
+        queueSaveState();
+      }
+    }
     dividerHandleX.addEventListener('pointerdown', (e)=>{ if (appState.map.view.mode!=='side-x') return; appState.map.dragging.sideX=true; e.target.setPointerCapture(e.pointerId); e.preventDefault(); });
     dividerHandleY.addEventListener('pointerdown', (e)=>{ if (appState.map.view.mode!=='side-y') return; appState.map.dragging.sideY=true; e.target.setPointerCapture(e.pointerId); e.preventDefault(); });
     lensHandle.addEventListener('pointerdown', (e)=>{ if (appState.map.view.mode!=='spy') return; appState.map.dragging.lensR=true; e.target.setPointerCapture(e.pointerId); e.preventDefault(); });
@@ -874,7 +898,12 @@
     }
     function setActiveTool(mode){
         cleanupTool();
-        if (!mode || mode==='none') return;
+        if (!mode || mode==='none') {
+            setViewOverlaysPointerEvents('auto'); // Restore pointer events
+            return;
+        }
+        
+        setViewOverlaysPointerEvents('none'); // Disable pointer events to draw "through" them
         const typeMap = { point: 'Point', line: 'LineString', poly: 'Polygon' };
         if (!typeMap[mode]) return;
         
@@ -940,6 +969,7 @@
       feature.set('img_past', annoImgPastInput.value);
       researchLayer.changed();
       refreshAnnoTable();
+      queueSaveState();
       closeAnnoModal();
     });
     closeAnnoModalBtn.addEventListener('click', closeAnnoModal);
@@ -995,11 +1025,12 @@
     // --- Story Mode & Presentation ---
     function populateSceneAnnotationList(visibleIds = null) {
         const features = researchSource.getFeatures();
-        sceneAnnotationList.innerHTML = '';
         if (features.length === 0) {
             sceneAnnotationList.innerHTML = '<p class="text-xs text-gray-500 p-2">No annotations available to select.</p>';
             return;
         }
+        sceneAnnotationList.innerHTML = '';
+
         features.forEach(f => {
             const id = f.getId();
             const label = f.get('label') || `Feature ${id}`;
@@ -1041,43 +1072,77 @@
         map.getView().animate(animOpts);
         researchSource.getFeatures().forEach(f => f.set('hidden', !scene.visibleFeatures.includes(f.getId())));
         researchLayer.changed();
-        refreshAnnoTable();
+        if (document.getElementById('panelAnnotations') && !document.getElementById('panelAnnotations').classList.contains('hidden')) {
+          refreshAnnoTable();
+        }
     }
     function renderStoryPanel() {
         storyList.innerHTML = '';
         const scenes = appState.story.scenes;
         if (scenes.length === 0) {
-            storyList.innerHTML = `<li class="p-4 text-center text-gray-500">No scenes captured yet.</li>`;
+            storyList.innerHTML = `<li class="p-4 text-center text-gray-500" id="story-placeholder">No scenes captured yet.</li>`;
             downloadStoryBtn.disabled = true;
             presentStoryBtn.disabled = true;
             return;
         }
         downloadStoryBtn.disabled = false;
-        presentStoryBtn.disabled = false;
+        presentStoryBtn.disabled = scenes.filter(s => !s.hidden).length === 0;
         scenes.forEach((scene, index) => {
             const li = document.createElement('li');
-            li.className = 'p-3 flex items-center gap-2';
-            const title = scene.title || `Scene ${index + 1}`;
-            li.innerHTML = `<span class="flex-grow font-semibold text-gray-700">${escHtml(title)}</span>`;
-            const goToBtn = document.createElement('button');
-            goToBtn.textContent = 'Go';
-            goToBtn.className = 'px-2 py-1 text-xs font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700';
-            goToBtn.onclick = () => applyScene(scene);
+            const isHidden = !!scene.hidden;
+            li.className = `p-3 flex items-center gap-3 cursor-move ${isHidden ? 'opacity-60 bg-gray-100' : ''}`;
+            li.draggable = true;
+            li.dataset.index = index;
+            li.innerHTML = `<span class="flex-grow font-semibold text-gray-700 truncate" title="${escHtml(scene.title)}">${escHtml(scene.title)}</span>`;
+            
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'flex items-center gap-1 flex-shrink-0';
+
             const editBtn = document.createElement('button');
-            editBtn.textContent = 'Edit';
-            editBtn.className = 'px-2 py-1 text-xs font-semibold text-white bg-green-600 rounded-md hover:bg-green-700';
-            editBtn.onclick = () => enterEditMode(index);
+            editBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>`;
+            editBtn.className = 'p-1.5 text-green-600 hover:bg-green-100 rounded-md';
+            editBtn.title = 'Edit Scene';
+            editBtn.onclick = (e) => { e.stopPropagation(); enterEditMode(index); };
+
+            const duplicateBtn = document.createElement('button');
+            duplicateBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>`;
+            duplicateBtn.className = 'p-1.5 text-blue-600 hover:bg-blue-100 rounded-md';
+            duplicateBtn.title = 'Duplicate Scene';
+            duplicateBtn.onclick = (e) => {
+                e.stopPropagation();
+                const sceneToCopy = appState.story.scenes[index];
+                const newScene = JSON.parse(JSON.stringify(sceneToCopy));
+                newScene.title = `${newScene.title} (Copy)`;
+                appState.story.scenes.splice(index + 1, 0, newScene);
+                renderStoryPanel();
+            };
+
+            const hideBtn = document.createElement('button');
+            hideBtn.innerHTML = isHidden 
+                ? `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>` 
+                : `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
+            hideBtn.className = 'p-1.5 text-gray-600 hover:bg-gray-200 rounded-md';
+            hideBtn.title = isHidden ? 'Show in Presentation' : 'Hide from Presentation';
+            hideBtn.onclick = (e) => { e.stopPropagation(); scene.hidden = !isHidden; renderStoryPanel(); };
+
             const delBtn = document.createElement('button');
-            delBtn.textContent = 'Del';
-            delBtn.className = 'px-2 py-1 text-xs font-semibold text-white bg-red-600 rounded-md hover:bg-red-700';
-            delBtn.onclick = () => {
+            delBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>`;
+            delBtn.className = 'p-1.5 text-red-600 hover:bg-red-100 rounded-md';
+            delBtn.title = 'Delete Scene';
+            delBtn.onclick = (e) => {
+                e.stopPropagation();
                 if (appState.story.editingSceneIndex === index) exitEditMode();
                 scenes.splice(index, 1);
                 renderStoryPanel();
             };
-            li.appendChild(goToBtn); li.appendChild(editBtn); li.appendChild(delBtn);
+            actionsDiv.appendChild(editBtn);
+            actionsDiv.appendChild(duplicateBtn);
+            actionsDiv.appendChild(hideBtn);
+            actionsDiv.appendChild(delBtn);
+            li.appendChild(actionsDiv);
             storyList.appendChild(li);
         });
+        queueSaveState();
     }
     captureSceneBtn.addEventListener('click', () => {
         const view = map.getView();
@@ -1088,12 +1153,21 @@
             basemap: basemapSel.value, overlayId: appState.map.loadedOverlayId,
             opacity: parseFloat(opacityRange.value), viewMode: appState.map.view.mode,
             sideRatio: appState.map.view.sideRatio, lensRadius: appState.map.view.lensRadius,
-            visibleFeatures: visibleFeatures
+            visibleFeatures: visibleFeatures,
+            hidden: appState.story.editingSceneIndex !== null ? appState.story.scenes[appState.story.editingSceneIndex].hidden : false
         };
         if (appState.story.editingSceneIndex !== null) {
+            // Editing: if new title is empty, keep the old one.
+            if (!scene.title) {
+                scene.title = appState.story.scenes[appState.story.editingSceneIndex].title;
+            }
             appState.story.scenes[appState.story.editingSceneIndex] = scene;
             exitEditMode();
         } else {
+            // Creating: if title is empty, generate a default one.
+            if (!scene.title) {
+                scene.title = `Scene ${appState.story.scenes.length + 1}`;
+            }
             appState.story.scenes.push(scene);
             sceneTitleInput.value = '';
             sceneDetailsInput.value = '';
@@ -1143,6 +1217,12 @@
                 const loadedData = JSON.parse(String(reader.result || '{}'));
                 if (loadedData && loadedData.features && Array.isArray(loadedData.scenes)) {
                     researchSource.clear();
+                    // Assign titles to untitled scenes to make them stable
+                    loadedData.scenes.forEach((scene, i) => {
+                        if (!scene.title) {
+                            scene.title = `Scene ${i + 1}`;
+                        }
+                    });
                     const features = new ol.format.GeoJSON().readFeatures(loadedData.features, { featureProjection: 'EPSG:3857' });
                     researchSource.addFeatures(features);
                     appState.story.scenes = loadedData.scenes;
@@ -1154,35 +1234,67 @@
         reader.readAsText(file);
     });
 
+    // --- Story Drag & Drop ---
+    let dragStartIndex;
+    storyList.addEventListener('dragstart', (e) => {
+        const target = e.target.closest('li[draggable="true"]');
+        if (target) {
+            dragStartIndex = parseInt(target.dataset.index, 10);
+            e.dataTransfer.effectAllowed = 'move';
+            setTimeout(() => target.classList.add('opacity-30'), 0);
+        }
+    });
+    storyList.addEventListener('dragend', (e) => {
+        e.target.closest('li[draggable="true"]')?.classList.remove('opacity-30');
+        dragStartIndex = undefined;
+    });
+    storyList.addEventListener('dragover', (e) => {
+        e.preventDefault(); // This is necessary to allow a drop
+    });
+    storyList.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const dropTarget = e.target.closest('li[draggable="true"]');
+        if (dropTarget && typeof dragStartIndex === 'number') {
+            const dropIndex = parseInt(dropTarget.dataset.index, 10);
+            if (dragStartIndex !== dropIndex) {
+                const [movedItem] = appState.story.scenes.splice(dragStartIndex, 1);
+                appState.story.scenes.splice(dropIndex, 0, movedItem);
+                renderStoryPanel();
+            }
+        }
+    });
+
     async function showSlide(index) {
-        if (index < 0 || index >= appState.story.scenes.length) return;
-        appState.story.currentSlideIndex = index;
-        const scene = appState.story.scenes[index];
+        if (index < 0 || index >= appState.story.presentationScenes.length) return;
+        appState.story.currentPresentationIndex = index;
+        const scene = appState.story.presentationScenes[index];
         await applyScene(scene);
         presentationTitle.textContent = scene.title || `Scene ${index + 1}`;
         presentationDetails.textContent = scene.details || '';
-        presentationCounter.textContent = `${index + 1} / ${appState.story.scenes.length}`;
+        presentationCounter.textContent = `${index + 1} / ${appState.story.presentationScenes.length}`;
         presentationPrev.disabled = index === 0;
-        presentationNext.disabled = index === appState.story.scenes.length - 1;
+        presentationNext.disabled = index === appState.story.presentationScenes.length - 1;
     }
     function startPresentation() {
-        if (appState.story.scenes.length === 0) return;
+        appState.story.presentationScenes = appState.story.scenes.filter(s => !s.hidden);
+        if (appState.story.presentationScenes.length === 0) return;
         updateSidebar(true); // Collapse sidebar for presentation
         presentationOverlay.classList.remove('hidden');
         showSlide(0);
     }
     function exitPresentation() {
         presentationOverlay.classList.add('hidden');
-        appState.story.currentSlideIndex = -1;
+        appState.story.currentPresentationIndex = -1;
+        appState.story.presentationScenes = [];
     }
     presentStoryBtn.addEventListener('click', startPresentation);
     presentationExit.addEventListener('click', exitPresentation);
-    presentationNext.addEventListener('click', () => showSlide(appState.story.currentSlideIndex + 1));
-    presentationPrev.addEventListener('click', () => showSlide(appState.story.currentSlideIndex - 1));
+    presentationNext.addEventListener('click', () => showSlide(appState.story.currentPresentationIndex + 1));
+    presentationPrev.addEventListener('click', () => showSlide(appState.story.currentPresentationIndex - 1));
     document.addEventListener('keydown', (e) => {
         if (presentationOverlay.classList.contains('hidden')) return;
-        if (e.key === 'ArrowRight') showSlide(appState.story.currentSlideIndex + 1);
-        else if (e.key === 'ArrowLeft') showSlide(appState.story.currentSlideIndex - 1);
+        if (e.key === 'ArrowRight') showSlide(appState.story.currentPresentationIndex + 1);
+        else if (e.key === 'ArrowLeft') showSlide(appState.story.currentPresentationIndex - 1);
         else if (e.key === 'Escape') exitPresentation();
     });
 
@@ -1354,6 +1466,14 @@
     coordClose.addEventListener('click', hideCoordMenu);
     document.addEventListener('pointerdown', (e) => { if (!coordMenu.classList.contains('hidden') && !coordMenu.contains(e.target)) hideCoordMenu(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { hideCoordMenu(); closeMetaFn(); closeAnnoModal(); exitPresentation(); } });
+    if (clearStateBtn) {
+        clearStateBtn.addEventListener('click', () => {
+            if (confirm('Are you sure you want to clear all saved data? This action cannot be undone.')) {
+                localStorage.removeItem(APP_STATE_KEY);
+                location.reload();
+            }
+        });
+    }
 
     // --- Metadata Summary Renderer ---
     function renderMetadataSummary(annotation, feature, extent3857) {
@@ -1370,8 +1490,66 @@
       metaSummary.innerHTML = `<div class="grid grid-cols-[max-content,1fr] gap-x-4 gap-y-2">${rows.join('')}</div>`;
     }
 
+    // --- State Persistence ---
+    function saveAppState() {
+        try {
+            const state = {
+                basemap: basemapSel.value,
+                overlayId: appState.map.loadedOverlayId,
+                view: {
+                    ...appState.map.view,
+                    opacity: parseFloat(opacityRange.value)
+                },
+                mapView: {
+                    center: map.getView().getCenter(),
+                    zoom: map.getView().getZoom(),
+                    rotation: map.getView().getRotation()
+                },
+                annotations: geoJsonFormat.writeFeaturesObject(researchSource.getFeatures(), { featureProjection: 'EPSG:3857' }),
+                story: appState.story.scenes
+            };
+            localStorage.setItem(APP_STATE_KEY, JSON.stringify(state));
+        } catch (e) {
+            console.error("Failed to save app state:", e);
+        }
+    }
+    let saveStateTimer = null;
+    function queueSaveState() {
+        if (saveStateTimer) clearTimeout(saveStateTimer);
+        saveStateTimer = setTimeout(saveAppState, 1000);
+    }
+    async function loadAppState() {
+        const savedStateJSON = localStorage.getItem(APP_STATE_KEY);
+        if (!savedStateJSON) return;
+        try {
+            const state = JSON.parse(savedStateJSON);
+            if (state.mapView) map.getView().setProperties(state.mapView);
+            if (state.annotations) researchSource.addFeatures(new ol.format.GeoJSON().readFeatures(state.annotations, { featureProjection: 'EPSG:3857' }));
+            if (state.story) appState.story.scenes = state.story;
+            if (state.basemap) { setBasemap(state.basemap); basemapSel.value = state.basemap; }
+            if (state.view) {
+                appState.map.view.sideRatio = state.view.sideRatio || 0.5;
+                appState.map.view.lensRadius = state.view.lensRadius || 150;
+                setMode(state.view.mode || 'overlay');
+                const opacity = state.view.opacity || 0.8;
+                opacityRange.value = opacity;
+                opLabel.textContent = `${Math.round(opacity * 100)}%`;
+            }
+            if (state.overlayId) {
+                mapSelector.value = state.overlayId;
+                await loadAllmaps(state.overlayId);
+                if (state.view?.opacity && appState.map.currentMapId) {
+                    warpedMapLayer.setMapOpacity(appState.map.currentMapId, state.view.opacity);
+                }
+            }
+        } catch (e) {
+            console.error("Failed to load app state:", e);
+            localStorage.removeItem(APP_STATE_KEY);
+        }
+    }
+
     // --- App Initialization ---
-    async function initializeApp() {
+    async function populateMapList() {
       const googleSheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQivs6N80xA_Pgs0J8MMMTGcH4YLzjhhyxPUoMcoQTxHjUyRXo5FMOICXDSxayDcLYisABkoqvXiIiA/pub?output=csv';
       try {
         const response = await fetch(googleSheetUrl);
@@ -1397,16 +1575,6 @@
           option.textContent = map.name;
           mapSelector.appendChild(option);
         });
-
-        const qid = new URL(location.href).searchParams.get('id');
-        const idToLoad = qid && maps.some(m => m.id === qid) ? qid : (maps[0]?.id || null);
-
-        if (idToLoad) {
-          mapSelector.value = idToLoad;
-          loadAllmaps(idToLoad);
-        } else if (statusEl) {
-          statusEl.textContent = 'No maps found in the list.';
-        }
       } catch (error) {
         console.error("Could not load map dataset:", error);
         if (statusEl) {
@@ -1415,13 +1583,29 @@
         }
       }
     }
+    async function loadFromUrlOrDefault() {
+        const qid = new URL(location.href).searchParams.get('id');
+        if (qid && qid !== appState.map.loadedOverlayId) {
+            mapSelector.value = qid;
+            await loadAllmaps(qid);
+            return;
+        }
+        if (!appState.map.loadedOverlayId) {
+            const firstMapId = mapSelector.options[1]?.value;
+            if (firstMapId) {
+                mapSelector.value = firstMapId;
+                await loadAllmaps(firstMapId);
+            }
+        }
+    }
 
     // --- Initial Run ---
     const isInitiallyMobile = window.innerWidth < 768;
     updateSidebar(isInitiallyMobile);
     showTab('Map');
-    refreshAnnoTable();
-    initializeApp().catch(console.error);
+    populateMapList().then(() => loadAppState()).then(() => loadFromUrlOrDefault()).then(() => {
+        refreshAnnoTable(); renderStoryPanel();
+    }).catch(console.error);
     
   </script>
 </body>
