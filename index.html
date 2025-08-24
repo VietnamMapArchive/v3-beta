@@ -164,6 +164,9 @@
           <div class="pb-4 border-b">
             <div class="flex gap-2 items-center">
               <input id="searchQuery" type="text" placeholder="Search for a place..." class="flex-grow p-2 border border-gray-300 rounded-md">
+              <button id="searchClearBtn" title="Clear search" class="p-2 text-white bg-red-600 rounded-md hover:bg-red-700">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
               <button id="searchLocate" title="Find my location" class="p-2 text-white bg-green-600 rounded-md hover:bg-green-700">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
               </button>
@@ -539,6 +542,7 @@
     const searchQuery = document.getElementById('searchQuery');
     const searchResults = document.getElementById('searchResults');
     const searchLocate = document.getElementById('searchLocate');
+    const searchClearBtn = document.getElementById('searchClearBtn');
     // Story Panel
     const sceneTitleInput = document.getElementById('sceneTitleInput');
     const sceneDetailsInput = document.getElementById('sceneDetailsInput');
@@ -1361,6 +1365,14 @@
         appState.search.timer = setTimeout(() => { appState.search.lastSearchTime = now; runSearchNow(); }, wait + 400);
     }
     searchQuery.addEventListener('input', queueSearch);
+    if (searchClearBtn) {
+        searchClearBtn.addEventListener('click', () => {
+            searchQuery.value = '';
+            searchSource.clear();
+            searchResults.innerHTML = '<div class="p-4 text-center text-sm text-gray-500">Enter a place or address to search.</div>';
+            if (appState.search.abortController) appState.search.abortController.abort();
+        });
+    }
     searchLocate.addEventListener('click', () => {
         if (!('geolocation' in navigator)) { alert('Geolocation is not supported.'); return; }
         searchResults.innerHTML = '<div class="p-4 text-center text-sm text-gray-500">Locating...</div>';
