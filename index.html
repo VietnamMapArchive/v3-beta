@@ -158,6 +158,10 @@
             <div id="loader" class="hidden h-5 w-5 animate-spin rounded-full border-2 border-solid border-indigo-600 border-r-transparent"></div>
             <div id="status" class="text-sm text-gray-500"></div>
           </div>
+          <div class="pt-4 border-t border-gray-200">
+            <button id="clearStateBtn" class="w-full px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded-md hover:bg-red-700">Clear Saved State & Reload</button>
+            <p class="text-xs text-gray-500 mt-2">This will remove all saved annotations, story scenes, and view settings from your browser.</p>
+          </div>
         </div>
         
         <div id="panelAnnotations" class="tab-panel hidden p-4 space-y-4">
@@ -254,10 +258,6 @@
               <li><b>Coordinates:</b> Right-click anywhere on the map to see the coordinates for that location. Click the value to copy it to your clipboard.</li>
              </ul>
           </div>
-          <div class="pt-4 border-t border-gray-200">
-            <button id="clearStateBtn" class="w-full px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded-md hover:bg-red-700">Clear Saved State & Reload</button>
-            <p class="text-xs text-gray-500 mt-2">This will remove all saved annotations, story scenes, and view settings from your browser.</p>
-          </div>
            <div class="text-center text-xs text-gray-400 pt-4 border-t">Built with OpenLayers, Allmaps & OSM</div>
         </div>
       </div>
@@ -311,12 +311,12 @@
     <div id="popup-content" class="p-3"></div>
   </div>
   
-  <div id="presentation-overlay" class="hidden fixed inset-0 bg-transparent z-40 flex-col text-white font-sans">
-    <div id="presentation-content" class="absolute bottom-5 left-5 right-5 max-w-2xl mx-auto bg-gray-900/80 backdrop-blur-sm border border-white/10 rounded-lg p-5">
+  <div id="presentation-overlay" class="hidden fixed inset-0 bg-transparent z-40 flex-col text-white font-sans pointer-events-none">
+    <div id="presentation-content" class="absolute bottom-5 left-5 right-5 max-w-2xl mx-auto bg-gray-900/80 backdrop-blur-sm border border-white/10 rounded-lg p-5 pointer-events-auto">
         <h2 id="presentation-title" class="text-xl font-bold mb-2"></h2>
         <p id="presentation-details" class="text-sm max-h-24 overflow-y-auto"></p>
     </div>
-    <div id="presentation-nav" class="absolute top-5 right-5 flex gap-3 items-center">
+    <div id="presentation-nav" class="absolute top-5 right-5 flex gap-3 items-center pointer-events-auto">
         <span id="presentation-counter" class="font-mono text-sm px-3 py-1.5 bg-gray-900/80 border border-white/10 rounded-md"></span>
         <button id="presentation-prev" class="px-4 py-1.5 text-sm font-semibold text-white bg-gray-900/80 border border-white/10 rounded-md hover:bg-white/10 disabled:opacity-50">&lt; Prev</button>
         <button id="presentation-next" class="px-4 py-1.5 text-sm font-semibold text-white bg-gray-900/80 border border-white/10 rounded-md hover:bg-white/10 disabled:opacity-50">Next &gt;</button>
@@ -357,15 +357,21 @@
           <label for="annoColorInput" class="block text-sm font-medium text-gray-700 mb-1">Color</label>
           <input type="color" id="annoColorInput" class="w-full h-10 p-1 border border-gray-300 rounded-md" value="#2563eb">
         </div>
-        <div class="pt-4 border-t space-y-3">
+        <div class="pt-4 border-t space-y-2">
           <div>
-            <label for="annoImgCurrentInput" class="block text-sm font-medium text-gray-700 mb-1">Image URL (Current)</label>
-            <input type="text" id="annoImgCurrentInput" class="w-full p-2 border border-gray-300 rounded-md" placeholder="https://...">
+            <label for="annoImg1Input" class="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
+            <input type="text" id="annoImg1Input" class="w-full p-2 border border-gray-300 rounded-md" placeholder="https://...">
           </div>
-          <div>
-            <label for="annoImgPastInput" class="block text-sm font-medium text-gray-700 mb-1">Image URL (Past)</label>
-            <input type="text" id="annoImgPastInput" class="w-full p-2 border border-gray-300 rounded-md" placeholder="https://...">
+          <div id="annoImg2Container" class="hidden space-y-1">
+            <label for="annoImg2Input" class="block text-sm font-medium text-gray-700">Second Image URL (for comparison)</label>
+            <div class="flex gap-2">
+              <input type="text" id="annoImg2Input" class="flex-grow p-2 border border-gray-300 rounded-md" placeholder="https://...">
+              <button id="removeImg2Btn" type="button" class="p-2 text-white bg-red-600 rounded-md hover:bg-red-700" title="Remove second image"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+            </div>
           </div>
+          <button id="addImg2Btn" type="button" class="w-full px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-dashed border-gray-400 rounded-md hover:bg-gray-100">
+            + Add a second image for comparison
+          </button>
         </div>
       </div>
       <div class="p-4 border-t bg-gray-50">
@@ -573,8 +579,11 @@
     const annoLabelInput = document.getElementById('annoLabelInput');
     const annoDetailsInput = document.getElementById('annoDetailsInput');
     const annoColorInput = document.getElementById('annoColorInput');
-    const annoImgCurrentInput = document.getElementById('annoImgCurrentInput');
-    const annoImgPastInput = document.getElementById('annoImgPastInput');
+    const annoImg1Input = document.getElementById('annoImg1Input');
+    const annoImg2Input = document.getElementById('annoImg2Input');
+    const annoImg2Container = document.getElementById('annoImg2Container');
+    const addImg2Btn = document.getElementById('addImg2Btn');
+    const removeImg2Btn = document.getElementById('removeImg2Btn');
     const saveAnnoBtn = document.getElementById('saveAnnoBtn');
     // Coordinate Menu
     const coordMenu  = document.getElementById('coordMenu');
@@ -926,9 +935,9 @@
         appState.research.drawInteraction.on('drawend', (e) => {
           getOrAssignId(e.feature);
           e.feature.set('details', '');
-          e.feature.set('color', '#2563eb');
-          e.feature.set('img_past', '');
-          e.feature.set('img_current', '');
+          e.feature.set('color', '#2563eb'); // default color
+          e.feature.set('img1', '');
+          e.feature.set('img2', '');
           e.feature.set('hidden', false);
           refreshAnnoTable();
           openAnnoModal(e.feature);
@@ -955,22 +964,40 @@
       annoLabelInput.value = feature.get('label') || '';
       annoDetailsInput.value = feature.get('details') || '';
       annoColorInput.value = feature.get('color') || '#2563eb';
-      annoImgCurrentInput.value = feature.get('img_current') || '';
-      annoImgPastInput.value = feature.get('img_past') || '';
+      const img1 = feature.get('img1') || '';
+      const img2 = feature.get('img2') || '';
+      annoImg1Input.value = img1;
+      annoImg2Input.value = img2;
+      if (img2) {
+        annoImg2Container.classList.remove('hidden');
+        addImg2Btn.classList.add('hidden');
+      } else {
+        annoImg2Container.classList.add('hidden');
+        addImg2Btn.classList.remove('hidden');
+      }
       annoModal.classList.remove('hidden');
     }
     function closeAnnoModal() {
       annoModal.classList.add('hidden');
       appState.ui.selectedFeatureId = null;
     }
+    addImg2Btn.addEventListener('click', () => {
+        annoImg2Container.classList.remove('hidden');
+        addImg2Btn.classList.add('hidden');
+    });
+    removeImg2Btn.addEventListener('click', () => {
+        annoImg2Input.value = '';
+        annoImg2Container.classList.add('hidden');
+        addImg2Btn.classList.remove('hidden');
+    });
     saveAnnoBtn.addEventListener('click', () => {
       const feature = researchSource.getFeatureById(appState.ui.selectedFeatureId);
       if (!feature) return;
       feature.set('label', annoLabelInput.value);
       feature.set('details', annoDetailsInput.value);
       feature.set('color', annoColorInput.value);
-      feature.set('img_current', annoImgCurrentInput.value);
-      feature.set('img_past', annoImgPastInput.value);
+      feature.set('img1', annoImg1Input.value.trim());
+      feature.set('img2', annoImg2Input.value.trim());
       researchLayer.changed();
       refreshAnnoTable();
       queueSaveState();
@@ -989,16 +1016,15 @@
       if (feature && !feature.get('hidden')) {
         const label = feature.get('label') || 'No Name';
         const details = feature.get('details') || 'No details provided.';
-        const imgCurrent = feature.get('img_current');
-        const imgPast = feature.get('img_past');
+        const img1 = feature.get('img1');
+        const img2 = feature.get('img2');
 
         let content = `<h4 class="font-bold text-sm mb-2">${escHtml(label)}</h4><p class="text-xs max-h-16 overflow-y-auto">${escHtml(details)}</p>`;
         
-        if (imgCurrent || imgPast) {
-          const canFlip = imgCurrent && imgPast;
-          const initialSrc = imgCurrent || imgPast;
-          const initialState = imgCurrent ? 'current' : 'past';
-          content += `<img id="popup-image" src="${escHtml(initialSrc)}" alt="${escHtml(label)}" class="mt-2 rounded-md max-w-full ${canFlip ? 'cursor-pointer' : ''}" ${canFlip ? `data-current-src="${escHtml(imgCurrent)}" data-past-src="${escHtml(imgPast)}" data-state="${initialState}"` : ''}>`;
+        if (img1 || img2) {
+          const canFlip = img1 && img2;
+          const initialSrc = img1 || img2;
+          content += `<img id="popup-image" src="${escHtml(initialSrc)}" alt="${escHtml(label)}" class="mt-2 rounded-md max-w-full ${canFlip ? 'cursor-pointer' : ''}" ${canFlip ? `data-img1-src="${escHtml(img1)}" data-img2-src="${escHtml(img2)}" data-state="1"` : ''}>`;
           if (canFlip) {
             content += `<div class="text-center text-xs text-gray-500 mt-1">Click image to flip</div>`;
           }
@@ -1008,11 +1034,11 @@
         popupOverlay.setPosition(evt.coordinate);
 
         const popupImage = document.getElementById('popup-image');
-        if (popupImage && popupImage.dataset.currentSrc) {
+        if (popupImage && popupImage.dataset.img1Src) {
           popupImage.addEventListener('click', () => {
-            const isCurrent = popupImage.dataset.state === 'current';
-            popupImage.src = isCurrent ? popupImage.dataset.pastSrc : popupImage.dataset.currentSrc;
-            popupImage.dataset.state = isCurrent ? 'past' : 'current';
+            const isState1 = popupImage.dataset.state === '1';
+            popupImage.src = isState1 ? popupImage.dataset.img2Src : popupImage.dataset.img1Src;
+            popupImage.dataset.state = isState1 ? '2' : '1';
           });
         }
       } else {
@@ -1397,10 +1423,10 @@
     }
     function featureToCsvRow(f) {
         const geojson = JSON.stringify(geoJsonFormat.writeGeometryObject(f.getGeometry(), { featureProjection: 'EPSG:3857' }));
-        return [f.getId() || '', f.getGeometry().getType(), f.get('label') || '', f.get('details') || '', f.get('color') || '#2563eb', f.get('img_current') || '', f.get('img_past') || '', geojson].map(csvEscape).join(',');
+        return [f.getId() || '', f.getGeometry().getType(), f.get('label') || '', f.get('details') || '', f.get('color') || '#2563eb', f.get('img1') || '', f.get('img2') || '', geojson].map(csvEscape).join(',');
     }
     function downloadCsv() {
-        const header = 'id,type,label,details,color,img_current,img_past,geojson';
+        const header = 'id,type,label,details,color,img1,img2,geojson';
         const csv = [header].concat(researchSource.getFeatures().map(featureToCsvRow)).join('\r\n');
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
@@ -1425,7 +1451,7 @@
         const header = parseCsvLine(lines.shift()).map(h => h.trim().toLowerCase());
         const geojsonIndex = header.indexOf('geojson');
         if (geojsonIndex === -1) { alert("Import failed: CSV must contain a 'geojson' column."); return; }
-        const colMap = { id: 'id', label: 'label', details: 'details', color: 'color', img_current: 'img_current', img_past: 'img_past' };
+        const colMap = { id: 'id', label: 'label', details: 'details', color: 'color', img1: 'img1', img2: 'img2' };
         for (const line of lines) {
             const cols = parseCsvLine(line);
             if (!cols[geojsonIndex]) continue;
