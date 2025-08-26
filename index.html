@@ -1562,7 +1562,7 @@
 
     // --- App Initialization ---
     async function populateMapList() {
-      const googleSheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQivs6N80xA_Pgs0J8MMMTGcH4YLzjhhyxPUoMcoQTxHjUyRXo5FMOICXDSxayDcLYisABkoqvXiIiA/pub?output=csv';
+      const googleSheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQivs6N80xA_Pgs0J8MMMTGcH4YLzjhhyxPUoMcoQTxHjUyRXo5FMOICXDSxayDcLYisABkoqvXiIiA/pub?gid=0&single=true&output=csv';
       try {
         const response = await fetch(googleSheetUrl);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
