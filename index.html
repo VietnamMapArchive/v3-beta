@@ -61,6 +61,15 @@
       color: #ffffff;
       border-color: #1f2937;
     }
+    .anno-label[readonly] {
+      cursor: pointer;
+    }
+    .view-mode-btn.active {
+      background-color: #eef2ff; /* indigo-100 */
+      border-color: #4f46e5; /* indigo-600 */
+      color: #4f46e5;
+      font-weight: 600;
+    }
     
     /* For Popup Arrow */
     #popup:before {
@@ -125,21 +134,38 @@
             <select id="allmapsId" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"></select>
           </div>
            <div class="space-y-2">
-            <label for="customMapId" class="text-sm font-medium text-gray-700">or Custom Map</label>
+            <div class="flex items-center gap-2">
+              <label for="customMapId" class="text-sm font-medium text-gray-700">or Custom Map</label>
+              <a href="https://docs.google.com/document/d/1y-lMkiTF9v2gUij7zMp0nHOR2EfnUh3YQFdFN11JWPM/edit?usp=sharing" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-indigo-600" title="Learn more about Allmaps IDs">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+              </a>
+            </div>
             <div class="flex gap-2">
               <input type="text" id="customMapId" placeholder="Enter Allmaps ID..." class="flex-grow p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
               <button id="loadCustomBtn" class="px-4 py-2 text-white bg-indigo-600 rounded-md hover:bg-indigo-700 font-semibold">Load</button>
             </div>
           </div>
-          <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-4">
             <div class="space-y-2">
-              <label for="viewMode" class="text-sm font-medium text-gray-700">View Mode</label>
-              <select id="viewMode" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                <option value="overlay" selected>Overlay</option>
-                <option value="side-x">Side-by-side X</option>
-                <option value="side-y">Side-by-side Y</option>
-                <option value="spy">Spyglass</option>
-              </select>
+              <label class="text-sm font-medium text-gray-700">View Mode</label>
+              <div id="viewModeButtons" class="grid grid-cols-4 gap-2">
+                  <button data-mode="overlay" class="view-mode-btn active p-2 border border-gray-300 rounded-md flex flex-col items-center justify-center hover:bg-gray-100" title="Overlay">
+                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                      <span class="text-xs mt-1">Overlay</span>
+                  </button>
+                  <button data-mode="side-x" class="view-mode-btn p-2 border border-gray-300 rounded-md flex flex-col items-center justify-center hover:bg-gray-100" title="Side-by-side Vertical">
+                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16v12H4zM12 6v12"></path></svg>
+                      <span class="text-xs mt-1">Side X</span>
+                  </button>
+                  <button data-mode="side-y" class="view-mode-btn p-2 border border-gray-300 rounded-md flex flex-col items-center justify-center hover:bg-gray-100" title="Side-by-side Horizontal">
+                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16v12H4zM4 12h16"></path></svg>
+                      <span class="text-xs mt-1">Side Y</span>
+                  </button>
+                  <button data-mode="spy" class="view-mode-btn p-2 border border-gray-300 rounded-md flex flex-col items-center justify-center hover:bg-gray-100" title="Spyglass">
+                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                      <span class="text-xs mt-1">Spy</span>
+                  </button>
+              </div>
             </div>
             <div class="space-y-2">
               <label class="text-sm font-medium text-gray-700">Opacity</label>
@@ -184,25 +210,33 @@
             <div class="space-y-3 p-2 bg-gray-100 rounded-lg">
               <div class="flex gap-2 items-center">
                 <span class="text-sm font-medium text-gray-700 w-14 text-right pr-2">Draw:</span>
-                <button id="btnPoint" type="button" class="tool-btn flex-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100">Point</button>
-                <button id="btnLine" type="button" class="tool-btn flex-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100">Line</button>
-                <button id="btnPoly" type="button" class="tool-btn flex-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100">Object</button>
+                <button id="btnPoint" type="button" class="tool-btn flex-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100 flex items-center justify-center gap-2">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                  <span>Point</span>
+                </button>
+                <button id="btnLine" type="button" class="tool-btn flex-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100 flex items-center justify-center gap-2">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19L9 12l4 4 5-7"></path></svg>
+                  <span>Line</span>
+                </button>
+                <button id="btnPoly" type="button" class="tool-btn flex-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100 flex items-center justify-center gap-2">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2z"></path></svg>
+                  <span>Object</span>
+                </button>
               </div>
               <div class="flex gap-2 items-center">
                 <span class="text-sm font-medium text-gray-700 w-14 text-right pr-2">Actions:</span>
                 <input id="importCsvInput" type="file" accept=".csv,text/csv" class="hidden" />
                 <button id="importCsvBtn" title="Load Annotations (.csv)" class="flex-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100">Load</button>
-                <button id="exportCsv" title="Save Annotations (.csv)" class="flex-1 px-3 py-1.5 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50" disabled>Save</button>
+                <button id="exportCsv" title="Save Annotations (.csv)" class="flex-1 px-3 py-1.5 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50" disabled>Export</button>
                 <button id="researchClear" title="Clear All Annotations" class="flex-1 px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700">Clear All</button>
               </div>
             </div>
             <div class="mt-2 text-xs text-gray-500">Tip: Click a feature on the map to view details. Use the table to Edit/Hide/Delete.</div>
             <div class="mt-2 h-80 overflow-auto custom-scrollbar border border-gray-200 rounded-lg">
-              <table id="annoTable" class="w-full text-sm text-left text-gray-600">
+              <table id="annoTable" class="w-full text-sm text-left text-gray-600" style="table-layout: fixed;">
                 <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 z-10">
                   <tr>
                     <th scope="col" class="px-4 py-2">Label</th>
-                    <th scope="col" class="px-4 py-2">Metric</th>
                     <th scope="col" class="px-4 py-2">Actions</th>
                   </tr>
                 </thead>
@@ -230,7 +264,7 @@
           <div class="flex flex-wrap gap-2 justify-center p-2 rounded-lg">
             <input id="loadStoryInput" type="file" accept=".json,application/json" class="hidden" />
             <button id="loadStoryBtn" class="px-3 py-1.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100">Load</button>
-            <button id="downloadStoryBtn" class="px-3 py-1.5 text-sm font-semibold text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50" disabled>Save</button>
+            <button id="downloadStoryBtn" class="px-3 py-1.5 text-sm font-semibold text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50" disabled>Export</button>
             <button id="presentStoryBtn" class="px-3 py-1.5 text-sm font-semibold text-white bg-purple-600 rounded-md hover:bg-purple-700 disabled:opacity-50" disabled>Present</button>
           </div>
            <div class="h-80 overflow-auto custom-scrollbar border border-gray-200 rounded-lg">
@@ -312,15 +346,16 @@
   </div>
   
   <div id="presentation-overlay" class="hidden fixed inset-0 bg-transparent z-40 flex-col text-white font-sans pointer-events-none">
-    <div id="presentation-content" class="absolute bottom-5 left-5 right-5 max-w-2xl mx-auto bg-gray-900/80 backdrop-blur-sm border border-white/10 rounded-lg p-5 pointer-events-auto">
-        <h2 id="presentation-title" class="text-xl font-bold mb-2"></h2>
-        <p id="presentation-details" class="text-sm max-h-24 overflow-y-auto"></p>
-    </div>
-    <div id="presentation-nav" class="absolute top-5 right-5 flex gap-3 items-center pointer-events-auto">
-        <span id="presentation-counter" class="font-mono text-sm px-3 py-1.5 bg-gray-900/80 border border-white/10 rounded-md"></span>
-        <button id="presentation-prev" class="px-4 py-1.5 text-sm font-semibold text-white bg-gray-900/80 border border-white/10 rounded-md hover:bg-white/10 disabled:opacity-50">&lt; Prev</button>
-        <button id="presentation-next" class="px-4 py-1.5 text-sm font-semibold text-white bg-gray-900/80 border border-white/10 rounded-md hover:bg-white/10 disabled:opacity-50">Next &gt;</button>
-        <button id="presentation-exit" class="px-4 py-1.5 text-sm font-semibold text-white bg-red-600/90 border border-white/10 rounded-md hover:bg-red-700">Exit</button>
+    <div class="absolute bottom-5 left-5 right-5 max-w-2xl mx-auto flex flex-col gap-3">
+      <div id="presentation-nav" class="flex gap-3 items-center self-end pointer-events-auto">
+          <span id="presentation-counter" class="font-mono text-sm px-3 py-1.5 bg-gray-900/80 border border-white/10 rounded-md"></span>
+          <button id="presentation-prev" class="px-4 py-1.5 text-sm font-semibold text-white bg-gray-900/80 border border-white/10 rounded-md hover:bg-white/10 disabled:opacity-50">&lt; Prev</button>
+          <button id="presentation-next" class="px-4 py-1.5 text-sm font-semibold text-white bg-gray-900/80 border border-white/10 rounded-md hover:bg-white/10 disabled:opacity-50">Next &gt;</button>
+      </div>
+      <div id="presentation-content" class="w-full bg-gray-900/80 backdrop-blur-sm border border-white/10 rounded-lg p-5 pointer-events-auto">
+          <h2 id="presentation-title" class="text-xl font-bold mb-2"></h2>
+          <p id="presentation-details" class="text-sm max-h-24 overflow-y-auto"></p>
+      </div>
     </div>
   </div>
 
@@ -530,7 +565,7 @@
     const mapSelector = document.getElementById('allmapsId');
     const customMapIdInput = document.getElementById('customMapId');
     const loadCustomBtn = document.getElementById('loadCustomBtn');
-    const viewModeSel = document.getElementById('viewMode');
+    const viewModeButtons = document.getElementById('viewModeButtons');
     const opacityRange = document.getElementById('opacityRange');
     const opLabel = document.getElementById('opLabel');
     const loader = document.getElementById('loader');
@@ -601,7 +636,6 @@
     const presentationCounter = document.getElementById('presentation-counter');
     const presentationPrev = document.getElementById('presentation-prev');
     const presentationNext = document.getElementById('presentation-next');
-    const presentationExit = document.getElementById('presentation-exit');
     const clearStateBtn = document.getElementById('clearStateBtn');
 
     // --- Sidebar & UI Functions ---
@@ -768,14 +802,18 @@
     function setMode(mode) {
       stopDrag();
       appState.map.view.mode = mode;
-      viewModeSel.value = mode;
+      if (viewModeButtons) {
+          viewModeButtons.querySelectorAll('.view-mode-btn').forEach(btn => {
+              btn.classList.toggle('active', btn.dataset.mode === mode);
+          });
+      }
       lockRotation(mode !== 'overlay');
       updateClipPath();
       updateDividersAndHandles();
       updateLensAndHandle();
       queueSaveState();
     }
-    viewModeSel.addEventListener('change', () => setMode(viewModeSel.value));
+    if (viewModeButtons) { viewModeButtons.addEventListener('click', (e) => { const button = e.target.closest('.view-mode-btn'); if (button && button.dataset.mode) { setMode(button.dataset.mode); } }); }
     opacityRange.addEventListener('input', () => {
       const v = parseFloat(opacityRange.value);
       opLabel.textContent = `${Math.round(v * 100)}%`;
@@ -882,22 +920,52 @@
             const label = f.get('label') || '';
             const isHidden = f.get('hidden');
             html += `<tr data-id="${id}" class="${isHidden ? 'opacity-50 bg-gray-50' : 'bg-white'}">
-                <td class="px-4 py-2 truncate max-w-xs">${escHtml(label)}</td>
-                <td class="px-4 py-2 text-xs">${metricForFeature(f)}</td>
+                <td class="px-4 py-2">
+                    <input type="text" class="anno-label w-full bg-transparent border-none focus:outline-none" value="${escHtml(label)}" readonly />
+                </td>
                 <td class="px-4 py-2 whitespace-nowrap space-x-1">
-                    <button class="anno-zoom p-1 text-blue-600 hover:text-blue-800" title="Zoom"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg></button>
                     <button class="anno-edit p-1 text-green-600 hover:text-green-800" title="Edit"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button>
                     <button class="anno-hide p-1 text-gray-600 hover:text-gray-800" title="${isHidden ? 'Show' : 'Hide'}">${isHidden ? '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>' : '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>'}</button>
                     <button class="anno-del p-1 text-red-600 hover:text-red-800" title="Delete"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
                 </td></tr>`;
         });
-        annoTbody.innerHTML = html || '<tr><td colspan="3" class="p-4 text-center text-gray-500">No annotations yet.</td></tr>';
+        annoTbody.innerHTML = html || '<tr><td colspan="2" class="p-4 text-center text-gray-500">No annotations yet.</td></tr>';
         annoTbody.querySelectorAll('tr[data-id]').forEach(row => {
             const id = row.dataset.id;
             const f = researchSource.getFeatureById(id);
             if (!f) return;
-            row.querySelector('.anno-zoom').addEventListener('click', () => map.getView().fit(f.getGeometry().getExtent(), { padding:[80,80,80,80], duration: 300, maxZoom: 18 }));
-            row.querySelector('.anno-edit').addEventListener('click', () => openAnnoModal(f));
+            const labelInput = row.querySelector('.anno-label');
+            if (labelInput) {
+                let clickTimer = null;
+                const clickDelay = 250; // ms to wait for a double-click
+                labelInput.addEventListener('click', () => {
+                    if (!labelInput.readOnly) return; // Do nothing if already in edit mode
+                    if (clickTimer === null) {
+                        clickTimer = setTimeout(() => {
+                            clickTimer = null;
+                            map.getView().fit(f.getGeometry().getExtent(), { padding:[80,80,80,80], duration: 300, maxZoom: 18 });
+                        }, clickDelay);
+                    } else {
+                        clearTimeout(clickTimer);
+                        clickTimer = null;
+                        labelInput.readOnly = false;
+                        labelInput.focus();
+                    }
+                });
+
+                labelInput.addEventListener('blur', () => {
+                    f.set('label', labelInput.value);
+                    researchLayer.changed();
+                    queueSaveState();
+                    labelInput.readOnly = true;
+                });
+                labelInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        labelInput.blur(); // Trigger blur to save
+                    }
+                });
+            }
+            row.querySelector('.anno-edit').addEventListener('click', () => openAnnoModal(f)); // Keep the modal edit button
             row.querySelector('.anno-hide').addEventListener('click', () => { f.set('hidden', !f.get('hidden')); researchLayer.changed(); refreshAnnoTable(); });
             row.querySelector('.anno-del').addEventListener('click', () => { researchSource.removeFeature(f); });
         });
@@ -940,7 +1008,6 @@
           e.feature.set('img2', '');
           e.feature.set('hidden', false);
           refreshAnnoTable();
-          openAnnoModal(e.feature);
           setActiveTool('none');
         });
     }
@@ -1296,6 +1363,7 @@
 
     async function showSlide(index) {
         if (index < 0 || index >= appState.story.presentationScenes.length) return;
+        popupOverlay.setPosition(undefined);
         appState.story.currentPresentationIndex = index;
         const scene = appState.story.presentationScenes[index];
         await applyScene(scene);
@@ -1318,7 +1386,6 @@
         appState.story.presentationScenes = [];
     }
     presentStoryBtn.addEventListener('click', startPresentation);
-    presentationExit.addEventListener('click', exitPresentation);
     presentationNext.addEventListener('click', () => showSlide(appState.story.currentPresentationIndex + 1));
     presentationPrev.addEventListener('click', () => showSlide(appState.story.currentPresentationIndex - 1));
     document.addEventListener('keydown', (e) => {
