@@ -729,7 +729,7 @@
       statusEl.classList.remove('text-red-600');
       metaBtn.disabled = true;
 
-      const annotationUrl = `https://annotations.allmaps.org/maps/${id}`;
+      const annotationUrl = `https://annotations.allmaps.org/${id}`;
       metaLinkWrap.innerHTML = `<a class="text-indigo-600 hover:underline" href="${annotationUrl}" target="_blank" rel="noreferrer">${annotationUrl}</a>`;
 
       try {
