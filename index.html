@@ -129,20 +129,29 @@
               <option value="g-satellite">Google Satellite</option>
             </select>
           </div>
-          <div class="space-y-2">
-            <label for="allmapsId" class="text-sm font-medium text-gray-700">Historical Map</label>
-            <select id="allmapsId" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"></select>
-          </div>
-           <div class="space-y-2">
-            <div class="flex items-center gap-2">
-              <label for="customMapId" class="text-sm font-medium text-gray-700">or Custom Map</label>
-              <a href="https://docs.google.com/document/d/1y-lMkiTF9v2gUij7zMp0nHOR2EfnUh3YQFdFN11JWPM/edit?usp=sharing" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-indigo-600" title="Learn more about Allmaps IDs">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
-              </a>
+          <div class="space-y-4 p-4 bg-gray-100 rounded-lg border border-gray-200">
+            <h3 class="text-base font-semibold text-gray-800">Historical Map</h3>
+            <div class="space-y-2">
+              <label for="mapTypeFilter" class="text-sm font-medium text-gray-700">Map Type</label>
+              <select id="mapTypeFilter" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                <option value="all" selected>All Types</option>
+              </select>
             </div>
-            <div class="flex gap-2">
-              <input type="text" id="customMapId" placeholder="Enter Allmaps ID, and Enter" class="flex-grow p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-              <button id="loadCustomBtn" class="px-4 py-2 text-white bg-indigo-600 rounded-md hover:bg-indigo-700 font-semibold">Load</button>
+            <div class="space-y-2">
+              <label for="allmapsId" class="text-sm font-medium text-gray-700">Choose Map</label>
+              <select id="allmapsId" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"></select>
+            </div>
+            <div class="space-y-2">
+              <div class="flex items-center gap-2">
+                <label for="customMapId" class="text-sm font-medium text-gray-700">or Custom Map ID</label>
+                <a href="https://docs.google.com/document/d/1y-lMkiTF9v2gUij7zMp0nHOR2EfnUh3YQFdFN11JWPM/edit?usp=sharing" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-indigo-600" title="Learn more about Allmaps IDs">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+                </a>
+              </div>
+              <div class="flex gap-2">
+                <input type="text" id="customMapId" placeholder="Enter Allmaps ID, and Enter" class="flex-grow p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                <button id="loadCustomBtn" class="px-4 py-2 text-white bg-indigo-600 rounded-md hover:bg-indigo-700 font-semibold">Load</button>
+              </div>
             </div>
           </div>
           <div class="space-y-4">
@@ -234,7 +243,6 @@
                 <button id="researchClear" title="Clear All Annotations" class="flex-1 px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700">Clear All</button>
               </div>
             </div>
-            <div class="mt-2 text-xs text-gray-500">Tip: Click a feature on the map to view details. Use the table to Edit/Hide/Delete.</div>
             <div class="mt-2 h-80 overflow-auto custom-scrollbar border border-gray-200 rounded-lg">
               <table id="annoTable" class="w-full text-sm text-left text-gray-600" style="table-layout: fixed;">
                 <thead class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 z-10">
@@ -254,13 +262,13 @@
             <input type="text" id="sceneTitleInput" placeholder="Scene Title" class="w-full p-2 border border-gray-300 rounded-md">
             <textarea id="sceneDetailsInput" placeholder="Scene Details..." rows="2" class="w-full p-2 border border-gray-300 rounded-md"></textarea>
             <div>
-              <label for="sceneDelayInput" class="block text-sm font-medium text-gray-700 mb-1">Autoplay Delay (seconds)</label>
-              <input type="number" id="sceneDelayInput" value="5" min="1" max="60" class="w-full p-2 border border-gray-300 rounded-md">
+              <label for="sceneDelayInput" class="block text-sm font-medium text-gray-700 mb-1">Autoplay (seconds)</label>
+              <input type="number" id="sceneDelayInput" value="2" min="1" max="60" class="w-full p-2 border border-gray-300 rounded-md">
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Visible Annotations</label>
               <div id="sceneAnnotationList" class="h-32 overflow-y-auto custom-scrollbar border border-gray-300 rounded-md bg-white p-2 space-y-1">
-                <p class="text-xs text-gray-500 p-2">No annotations available to select.</p>
+                <p class="text-xs text-gray-500 p-2">No annotations available.</p>
               </div>
             </div>
             <div class="flex gap-2">
@@ -578,6 +586,7 @@
     const basemapSel = document.getElementById('basemap');
     const zoomToMapBtn = document.getElementById('zoomToMapBtn');
     const mapSelector = document.getElementById('allmapsId');
+    const mapTypeFilter = document.getElementById('mapTypeFilter');
     const customMapIdInput = document.getElementById('customMapId');
     const loadCustomBtn = document.getElementById('loadCustomBtn');
     const viewModeButtons = document.getElementById('viewModeButtons');
@@ -657,6 +666,7 @@
     const pauseIcon = document.getElementById('pause-icon');
     const presentationExit = document.getElementById('presentation-exit');
     const clearStateBtn = document.getElementById('clearStateBtn');
+    let allMapsData = [];
 
     // --- Sidebar & UI Functions ---
     function updateSidebarPosition() {
@@ -707,6 +717,9 @@
             showTab(button.dataset.tab);
         });
     });
+    mapTypeFilter.addEventListener('change', () => {
+        populateMapSelector(mapTypeFilter.value);
+        });
 
     // --- Map Control Functions ---
     function zoomToMapExtent() {
@@ -1743,7 +1756,40 @@
     }
 
     // --- App Initialization ---
-    async function populateMapList() {
+    function populateMapSelector(filterType = 'all') {
+        const filteredMaps = filterType === 'all'
+            ? allMapsData
+            : allMapsData.filter(m => m.type === filterType);
+
+        mapSelector.innerHTML = '<option value="" disabled selected>Select a map from the list...</option>';
+        filteredMaps.forEach(map => {
+            const option = document.createElement('option');
+            option.value = map.id;
+            option.textContent = map.name;
+            mapSelector.appendChild(option);
+        });
+    }
+
+    function populateTypeFilter() {
+        const typeCounts = allMapsData.reduce((counts, map) => {
+            if (map.type) {
+                counts[map.type] = (counts[map.type] || 0) + 1;
+            }
+            return counts;
+        }, {});
+
+        const sortedTypes = Object.keys(typeCounts).sort();
+
+        mapTypeFilter.innerHTML = `<option value="all" selected>All Types (${allMapsData.length})</option>`;
+        sortedTypes.forEach(type => {
+            const option = document.createElement('option');
+            option.value = type;
+            option.textContent = `${type} (${typeCounts[type]})`;
+            mapTypeFilter.appendChild(option);
+        });
+    }
+
+    async function loadAndParseMapDataset() {
       const googleSheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQivs6N80xA_Pgs0J8MMMTGcH4YLzjhhyxPUoMcoQTxHjUyRXo5FMOICXDSxayDcLYisABkoqvXiIiA/pub?gid=0&single=true&output=csv';
       try {
         const response = await fetch(googleSheetUrl);
@@ -1753,22 +1799,19 @@
         const header = lines.shift().split(',').map(h => h.trim().toLowerCase());
         const nameIndex = header.indexOf('name');
         const idIndex = header.indexOf('id');
+        const typeIndex = header.indexOf('type');
         if (nameIndex === -1 || idIndex === -1) throw new Error("CSV must have 'name' and 'id' columns.");
 
-        const maps = lines.map(line => {
+        allMapsData = lines.map(line => {
           const values = line.match(/(".*?"|[^",\r\n]+)(?=\s*,|\s*$)/g) || [];
           const name = (values[nameIndex] || '').replace(/"/g, '').trim();
           const id = (values[idIndex] || '').replace(/"/g, '').trim();
-          return (name && id) ? { name, id } : null;
+          const type = typeIndex > -1 ? (values[typeIndex] || '').replace(/"/g, '').trim() : 'Uncategorized';
+          return (name && id) ? { name, id, type } : null;
         }).filter(Boolean);
 
-        mapSelector.innerHTML = '<option value="" disabled selected>Select a map from the list...</option>';
-        maps.forEach(map => {
-          const option = document.createElement('option');
-          option.value = map.id;
-          option.textContent = map.name;
-          mapSelector.appendChild(option);
-        });
+        populateTypeFilter();
+        populateMapSelector('all');
       } catch (error) {
         console.error("Could not load map dataset:", error);
         if (statusEl) {
@@ -1797,7 +1840,7 @@
     const isInitiallyMobile = window.innerWidth < 768;
     updateSidebar(isInitiallyMobile);
     showTab('Map');
-    populateMapList().then(() => loadAppState()).then(() => loadFromUrlOrDefault()).then(() => {
+    loadAndParseMapDataset().then(() => loadAppState()).then(() => loadFromUrlOrDefault()).then(() => {
         refreshAnnoTable(); renderStoryPanel();
     }).catch(console.error);
     
