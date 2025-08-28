@@ -141,7 +141,7 @@
               </a>
             </div>
             <div class="flex gap-2">
-              <input type="text" id="customMapId" placeholder="Enter Allmaps ID..." class="flex-grow p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+              <input type="text" id="customMapId" placeholder="Enter Allmaps ID, and Enter" class="flex-grow p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
               <button id="loadCustomBtn" class="px-4 py-2 text-white bg-indigo-600 rounded-md hover:bg-indigo-700 font-semibold">Load</button>
             </div>
           </div>
@@ -163,7 +163,7 @@
                   </button>
                   <button data-mode="spy" class="view-mode-btn p-2 border border-gray-300 rounded-md flex flex-col items-center justify-center hover:bg-gray-100" title="Spyglass">
                       <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                      <span class="text-xs mt-1">Spy</span>
+                      <span class="text-xs mt-1">Spyglass</span>
                   </button>
               </div>
             </div>
@@ -175,9 +175,12 @@
               </div>
             </div>
           </div>
-          <div class="pt-4 border-t border-gray-200">
-            <button id="metaBtn" disabled class="w-full px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed font-semibold">
-              Show Metadata
+          <div class="pt-4 border-t border-gray-200 flex gap-2">
+            <button id="metaBtn" disabled class="flex-1 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed font-semibold">
+              Metadata
+            </button>
+            <button id="zoomToMapBtn" class="flex-1 px-4 py-2 text-white bg-indigo-600 rounded-md hover:bg-indigo-700 font-semibold disabled:opacity-50 disabled:cursor-not-allowed" title="Zoom to map extent" disabled>
+              Zoom to Extent
             </button>
           </div>
           <div class="flex items-center justify-center gap-2 min-h-[20px]">
@@ -250,6 +253,10 @@
           <div id="story-capture-form" class="p-4 space-y-3 bg-gray-100 rounded-lg border border-gray-200">
             <input type="text" id="sceneTitleInput" placeholder="Scene Title" class="w-full p-2 border border-gray-300 rounded-md">
             <textarea id="sceneDetailsInput" placeholder="Scene Details..." rows="2" class="w-full p-2 border border-gray-300 rounded-md"></textarea>
+            <div>
+              <label for="sceneDelayInput" class="block text-sm font-medium text-gray-700 mb-1">Autoplay Delay (seconds)</label>
+              <input type="number" id="sceneDelayInput" value="5" min="1" max="60" class="w-full p-2 border border-gray-300 rounded-md">
+            </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">Visible Annotations</label>
               <div id="sceneAnnotationList" class="h-32 overflow-y-auto custom-scrollbar border border-gray-300 rounded-md bg-white p-2 space-y-1">
@@ -347,10 +354,15 @@
   
   <div id="presentation-overlay" class="hidden fixed inset-0 bg-transparent z-40 flex-col text-white font-sans pointer-events-none">
     <div class="absolute bottom-5 left-5 right-5 max-w-2xl mx-auto flex flex-col gap-3">
-      <div id="presentation-nav" class="flex gap-3 items-center self-end pointer-events-auto">
+      <div id="presentation-nav" class="flex flex-wrap gap-3 items-center self-end pointer-events-auto">
           <span id="presentation-counter" class="font-mono text-sm px-3 py-1.5 bg-gray-900/80 border border-white/10 rounded-md"></span>
           <button id="presentation-prev" class="px-4 py-1.5 text-sm font-semibold text-white bg-gray-900/80 border border-white/10 rounded-md hover:bg-white/10 disabled:opacity-50">&lt; Prev</button>
           <button id="presentation-next" class="px-4 py-1.5 text-sm font-semibold text-white bg-gray-900/80 border border-white/10 rounded-md hover:bg-white/10 disabled:opacity-50">Next &gt;</button>
+          <button id="presentation-play-pause" class="p-1.5 text-white bg-gray-900/80 border border-white/10 rounded-md hover:bg-white/10 flex items-center justify-center" title="Play/Pause Autoplay">
+            <svg id="play-icon" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"></path></svg>
+            <svg id="pause-icon" class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M5.75 3a.75.75 0 00-.75.75v12.5c0 .414.336.75.75.75h1.5a.75.75 0 00.75-.75V3.75A.75.75 0 007.25 3h-1.5zM12.75 3a.75.75 0 00-.75.75v12.5c0 .414.336.75.75.75h1.5a.75.75 0 00.75-.75V3.75a.75.75 0 00-.75-.75h-1.5z"></path></svg>
+          </button>
+          <button id="presentation-exit" class="px-3 py-1.5 text-sm font-semibold text-white bg-gray-900/80 border border-white/10 rounded-md hover:bg-white/10">Exit</button>
       </div>
       <div id="presentation-content" class="w-full bg-gray-900/80 backdrop-blur-sm border border-white/10 rounded-lg p-5 pointer-events-auto">
           <h2 id="presentation-title" class="text-xl font-bold mb-2"></h2>
@@ -446,6 +458,8 @@
         editingSceneIndex: null,
         presentationScenes: [],
         currentPresentationIndex: -1,
+        autoplayTimer: null,
+        isPlaying: false,
       },
       search: {
         abortController: null,
@@ -562,6 +576,7 @@
     const collapsedNav = document.getElementById('collapsed-nav');
     // Control Panel
     const basemapSel = document.getElementById('basemap');
+    const zoomToMapBtn = document.getElementById('zoomToMapBtn');
     const mapSelector = document.getElementById('allmapsId');
     const customMapIdInput = document.getElementById('customMapId');
     const loadCustomBtn = document.getElementById('loadCustomBtn');
@@ -587,6 +602,7 @@
     // Story Panel
     const sceneTitleInput = document.getElementById('sceneTitleInput');
     const sceneDetailsInput = document.getElementById('sceneDetailsInput');
+    const sceneDelayInput = document.getElementById('sceneDelayInput');
     const sceneAnnotationList = document.getElementById('sceneAnnotationList');
     const captureSceneBtn = document.getElementById('captureSceneBtn');
     const cancelEditBtn = document.getElementById('cancelEditBtn');
@@ -636,6 +652,10 @@
     const presentationCounter = document.getElementById('presentation-counter');
     const presentationPrev = document.getElementById('presentation-prev');
     const presentationNext = document.getElementById('presentation-next');
+    const presentationPlayPause = document.getElementById('presentation-play-pause');
+    const playIcon = document.getElementById('play-icon');
+    const pauseIcon = document.getElementById('pause-icon');
+    const presentationExit = document.getElementById('presentation-exit');
     const clearStateBtn = document.getElementById('clearStateBtn');
 
     // --- Sidebar & UI Functions ---
@@ -689,10 +709,18 @@
     });
 
     // --- Map Control Functions ---
+    function zoomToMapExtent() {
+        if (!appState.map.currentMapId) return;
+        const extent = warpedMapLayer.getExtent();
+        if (extent && !ol.extent.isEmpty(extent)) {
+            map.getView().fit(extent, { padding: [80, 80, 80, 80], duration: 500, maxZoom: 18 });
+        }
+    }
     function setBasemap(name) {
       [esriImageryLayer, googleStreets, googleSatellite].forEach(l => l.setVisible(l.getProperties().name === name));
     }
     basemapSel.addEventListener('change', () => { setBasemap(basemapSel.value); queueSaveState(); });
+    zoomToMapBtn.addEventListener('click', zoomToMapExtent);
 
     function hasInteraction(i){ return map.getInteractions().getArray().includes(i); }
     function enableRotateInteractions(on){
@@ -728,6 +756,7 @@
       statusEl.textContent = 'Loading map...';
       statusEl.classList.remove('text-red-600');
       metaBtn.disabled = true;
+      zoomToMapBtn.disabled = true;
 
       const annotationUrl = `https://annotations.allmaps.org/images/${id}`;
       metaLinkWrap.innerHTML = `<a class="text-indigo-600 hover:underline" href="${annotationUrl}" target="_blank" rel="noreferrer">${annotationUrl}</a>`;
@@ -746,11 +775,12 @@
         
         renderMetadataSummary(annotation, null, warpedMapLayer.getExtent());
         metaBtn.disabled = false;
-        statusEl.textContent = 'Map loaded successfully.';
+        zoomToMapBtn.disabled = false; // Enable the button for manual use
+        statusEl.textContent = 'Map data received. Please wait for tiles to load.';
         
         const opacity = parseFloat(opacityRange.value);
-        warpedMapLayer.setMapOpacity(appState.map.currentMapId, opacity);
-        queueSaveState();
+        warpedMapLayer.setMapOpacity(appState.map.currentMapId, opacity); // Keep opacity setting
+        queueSaveState(); 
 
       } catch (err) {
         if (err.name === 'AbortError') return;
@@ -1152,6 +1182,8 @@
             warpedMapLayer.clear();
             appState.map.currentMapId = null;
             appState.map.loadedOverlayId = null;
+            metaBtn.disabled = true;
+            zoomToMapBtn.disabled = true;
         }
         if (scene.overlayId && appState.map.currentMapId) {
             mapSelector.value = scene.overlayId;
@@ -1245,7 +1277,9 @@
         const view = map.getView();
         const visibleFeatures = Array.from(sceneAnnotationList.querySelectorAll('input[type=checkbox]:checked')).map(cb => cb.value);
         const scene = {
-            title: sceneTitleInput.value.trim(), details: sceneDetailsInput.value.trim(),
+            title: sceneTitleInput.value.trim(),
+            details: sceneDetailsInput.value.trim(),
+            delay: parseInt(sceneDelayInput.value, 10) || 5,
             center: view.getCenter(), zoom: view.getZoom(), rotation: view.getRotation(),
             basemap: basemapSel.value, overlayId: appState.map.loadedOverlayId,
             opacity: parseFloat(opacityRange.value), viewMode: appState.map.view.mode,
@@ -1268,6 +1302,7 @@
             appState.story.scenes.push(scene);
             sceneTitleInput.value = '';
             sceneDetailsInput.value = '';
+            sceneDelayInput.value = '5';
         }
         renderStoryPanel();
     });
@@ -1278,6 +1313,7 @@
         applyScene(scene);
         sceneTitleInput.value = scene.title || '';
         sceneDetailsInput.value = scene.details || '';
+        sceneDelayInput.value = scene.delay || 5;
         captureSceneBtn.textContent = 'Save Changes';
         captureSceneBtn.classList.replace('bg-blue-600', 'bg-green-600');
         cancelEditBtn.classList.remove('hidden');
@@ -1287,6 +1323,7 @@
         appState.story.editingSceneIndex = null;
         sceneTitleInput.value = '';
         sceneDetailsInput.value = '';
+        sceneDelayInput.value = '5';
         captureSceneBtn.textContent = 'Capture Scene';
         captureSceneBtn.classList.replace('bg-green-600', 'bg-blue-600');
         cancelEditBtn.classList.add('hidden');
@@ -1373,25 +1410,77 @@
         presentationPrev.disabled = index === 0;
         presentationNext.disabled = index === appState.story.presentationScenes.length - 1;
     }
+    function pauseAutoplay() {
+        if (!appState.story.isPlaying && !appState.story.autoplayTimer) return;
+        appState.story.isPlaying = false;
+        if (appState.story.autoplayTimer) {
+            clearTimeout(appState.story.autoplayTimer);
+            appState.story.autoplayTimer = null;
+        }
+        playIcon.classList.remove('hidden');
+        pauseIcon.classList.add('hidden');
+    }
+    async function playAutoplay() {
+        if (appState.story.isPlaying) return;
+
+        // If at the end, restart from the beginning.
+        if (appState.story.currentPresentationIndex >= appState.story.presentationScenes.length - 1) {
+            appState.story.currentPresentationIndex = -1;
+        }
+
+        appState.story.isPlaying = true;
+        playIcon.classList.add('hidden');
+        pauseIcon.classList.remove('hidden');
+
+        async function next() {
+            if (!appState.story.isPlaying) return;
+            const nextIndex = appState.story.currentPresentationIndex + 1;
+            if (nextIndex < appState.story.presentationScenes.length) {
+                await showSlide(nextIndex);
+                if (appState.story.isPlaying) { // Check again in case it was paused during await
+                    if (nextIndex >= appState.story.presentationScenes.length - 1) {
+                        pauseAutoplay(); // Reached the end
+                        return;
+                    }
+                    const currentScene = appState.story.presentationScenes[nextIndex];
+                    const delay = (currentScene.delay || 2) * 1000;
+                    appState.story.autoplayTimer = setTimeout(next, delay);
+                }
+            } else {
+                pauseAutoplay(); // Autoplay ends
+            }
+        }
+        if (appState.story.currentPresentationIndex === -1) {
+            next(); // Start immediately if we're restarting
+        } else {
+            const currentScene = appState.story.presentationScenes[appState.story.currentPresentationIndex];
+            const initialDelay = (currentScene?.delay || 2) * 1000;
+            appState.story.autoplayTimer = setTimeout(next, initialDelay);
+        }
+    }
     function startPresentation() {
         appState.story.presentationScenes = appState.story.scenes.filter(s => !s.hidden);
         if (appState.story.presentationScenes.length === 0) return;
         updateSidebar(true); // Collapse sidebar for presentation
         presentationOverlay.classList.remove('hidden');
+        pauseAutoplay(); // Reset autoplay state
         showSlide(0);
     }
     function exitPresentation() {
+        pauseAutoplay();
         presentationOverlay.classList.add('hidden');
         appState.story.currentPresentationIndex = -1;
         appState.story.presentationScenes = [];
     }
     presentStoryBtn.addEventListener('click', startPresentation);
-    presentationNext.addEventListener('click', () => showSlide(appState.story.currentPresentationIndex + 1));
-    presentationPrev.addEventListener('click', () => showSlide(appState.story.currentPresentationIndex - 1));
+    presentationNext.addEventListener('click', () => { pauseAutoplay(); showSlide(appState.story.currentPresentationIndex + 1); });
+    presentationPrev.addEventListener('click', () => { pauseAutoplay(); showSlide(appState.story.currentPresentationIndex - 1); });
+    presentationPlayPause.addEventListener('click', () => { if (appState.story.isPlaying) pauseAutoplay(); else playAutoplay(); });
+    presentationExit.addEventListener('click', exitPresentation);
     document.addEventListener('keydown', (e) => {
         if (presentationOverlay.classList.contains('hidden')) return;
-        if (e.key === 'ArrowRight') showSlide(appState.story.currentPresentationIndex + 1);
-        else if (e.key === 'ArrowLeft') showSlide(appState.story.currentPresentationIndex - 1);
+        if (e.key === 'ArrowRight') { pauseAutoplay(); showSlide(appState.story.currentPresentationIndex + 1); }
+        else if (e.key === 'ArrowLeft') { pauseAutoplay(); showSlide(appState.story.currentPresentationIndex - 1); }
         else if (e.key === 'Escape') exitPresentation();
     });
 
