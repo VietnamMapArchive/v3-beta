@@ -53,10 +53,13 @@
       color: #1f2937; /* gray-800 */
       border-bottom: 2px solid #4f46e5; /* indigo-600 */
     }
-     .tab-btn-mobile.active {
-      color: #4f46e5; /* indigo-600 */
-    }
+    
     .tool-btn.active {
+      background-color: #1f2937; /* gray-800 */
+      color: #ffffff;
+      border-color: #1f2937;
+    }
+    .seg-btn.active {
       background-color: #1f2937; /* gray-800 */
       color: #ffffff;
       border-color: #1f2937;
@@ -81,20 +84,37 @@
       border-style: solid;
       border-color: #d1d5db transparent transparent transparent;
     }
+
+    /* Guided Tour styles */
+    .tour-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); z-index: 1100; display: none; }
+    .tour-highlight { position: fixed; border-radius: 10px; box-shadow: 0 0 0 3px #6366f1, 0 10px 30px rgba(0,0,0,0.4); z-index: 1102; display: none; background: transparent; pointer-events: none; }
+    .tour-popover {
+      position: fixed; z-index: 1103; display: none; max-width: 340px;
+      background: #fff; color: #111827; border: 1px solid #e5e7eb; border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    }
+    .tour-popover .tour-header { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; font-weight: 700; }
+    .tour-popover .tour-body { padding: 10px 12px; font-size: 0.9rem; }
+    .tour-popover .tour-footer { padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid #e5e7eb; }
+    .tour-popover .btn { padding: 6px 10px; font-weight: 600; border-radius: 8px; border: 1px solid #e5e7eb; }
+    .tour-popover .btn-primary { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+    .tour-popover .btn-ghost { background: #fff; color: #374151; }
+    .tour-popover .counter { font-size: 12px; color: #6b7280; }
   </style>
 </head>
 <body class="bg-gray-800 font-sans antialiased overflow-hidden">
 
   <div class="h-screen w-screen flex">
-    <aside id="sidebar" class="relative z-20 h-full flex flex-col w-full md:w-96 bg-gray-50 border-r border-gray-200 shadow-lg transition-all duration-300 ease-in-out">
+    <aside id="sidebar" class="relative z-20 h-full flex flex-col w-96 bg-gray-50 border-r border-gray-200 shadow-lg transition-all duration-300 ease-in-out">
       <header class="flex items-center justify-between gap-3 p-4 border-b border-gray-200 bg-white">
         <div class="flex items-center gap-3 overflow-hidden">
           <img src="https://raw.githubusercontent.com/lqtue/VMA/main/data/logo.png" alt="Logo" class="w-8 h-8 flex-shrink-0">
           <div class="collapsible-content">
-            <h1 class="text-lg font-bold text-gray-800">Vietnam Map Archive</h1>
-            <p class="text-xs text-gray-500">VMA Map Viewer</p>
+            <h1 class="text-lg font-bold text-gray-800">Vietnam Map Archive project</h1>
+            <p class="text-xs text-gray-500">Map Viewer</p>
           </div>
         </div>
+        <div class="collapsible-content"></div>
       </header>
 
       <div id="collapsed-nav" class="hidden h-full flex-col items-center pt-5 space-y-4 bg-white border-r">
@@ -108,11 +128,14 @@
           <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
         </button>
         <button data-tab="Info" class="collapsed-tab-btn p-3 rounded-lg hover:bg-gray-200" title="Info">
-          <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9a3 3 0 116 0c0 2-2 3-3 3h-1v1" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 17h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
         </button>
       </div>
       
-      <nav class="hidden md:flex border-b border-gray-200 bg-gray-100 collapsible-content">
+      <nav class="flex border-b border-gray-200 bg-gray-100 collapsible-content">
         <button data-tab="Map" class="tab-btn-desktop active flex-1 p-3 text-sm font-semibold text-center text-gray-500 hover:bg-gray-200 transition-colors">Map</button>
         <button data-tab="Annotations" class="tab-btn-desktop flex-1 p-3 text-sm font-semibold text-center text-gray-500 hover:bg-gray-200 transition-colors">Annotation</button>
         <button data-tab="Story" class="tab-btn-desktop flex-1 p-3 text-sm font-semibold text-center text-gray-500 hover:bg-gray-200 transition-colors">Story</button>
@@ -129,7 +152,7 @@
               <option value="g-satellite">Google Satellite</option>
             </select>
           </div>
-          <div class="space-y-4 p-4 bg-gray-100 rounded-lg border border-gray-200">
+          <div id="historicalMapModule" class="space-y-4 p-4 bg-gray-100 rounded-lg border border-gray-200">
             <h3 class="text-base font-semibold text-gray-800">Historical Map</h3>
             <div class="space-y-2">
               <label for="mapTypeFilter" class="text-sm font-medium text-gray-700">Map Type</label>
@@ -154,7 +177,7 @@
               </div>
             </div>
           </div>
-          <div class="space-y-4">
+          <div id="viewControls" class="space-y-4">
             <div class="space-y-2">
               <label class="text-sm font-medium text-gray-700">View Mode</label>
               <div id="viewModeButtons" class="grid grid-cols-4 gap-2">
@@ -197,13 +220,13 @@
             <div id="status" class="text-sm text-gray-500"></div>
           </div>
           <div class="pt-4 border-t border-gray-200">
-            <button id="clearStateBtn" class="w-full px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded-md hover:bg-red-700">Clear Saved State & Reload</button>
+            <button id="clearStateBtn" class="w-full px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded-md hover:bg-red-700">Clear Cache & Reload</button>
             <p class="text-xs text-gray-500 mt-2">This will remove all saved annotations, story scenes, and view settings from your browser.</p>
           </div>
         </div>
         
         <div id="panelAnnotations" class="tab-panel hidden p-4 space-y-4">
-          <div class="pb-4 border-b">
+          <div id="searchModule" class="pb-4 border-b">
             <div class="flex gap-2 items-center">
               <input id="searchQuery" type="text" placeholder="Search for a place..." class="flex-grow p-2 border border-gray-300 rounded-md">
               <button id="searchClearBtn" title="Clear search" class="p-2 text-white bg-red-600 rounded-md hover:bg-red-700">
@@ -214,32 +237,24 @@
               </button>
             </div>
             <div id="searchResults" class="mt-2 h-48 overflow-auto custom-scrollbar space-y-1">
-                <div class="p-4 text-center text-sm text-gray-500">Enter a place or address to search.</div>
             </div>
           </div>
           
           <div>
-            <div class="space-y-3 p-2 bg-gray-100 rounded-lg">
+            <div id="drawTools" class="space-y-3 p-2 bg-gray-100 rounded-lg">
               <div class="flex gap-2 items-center">
                 <span class="text-sm font-medium text-gray-700 w-14 text-right pr-2">Draw:</span>
-                <button id="btnPoint" type="button" class="tool-btn flex-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100 flex items-center justify-center gap-2">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                  <span>Point</span>
-                </button>
-                <button id="btnLine" type="button" class="tool-btn flex-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100 flex items-center justify-center gap-2">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19L9 12l4 4 5-7"></path></svg>
-                  <span>Line</span>
-                </button>
-                <button id="btnPoly" type="button" class="tool-btn flex-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100 flex items-center justify-center gap-2">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2z"></path></svg>
-                  <span>Object</span>
-                </button>
+                <div id="toolModeGroup" class="flex flex-1 select-none">
+                  <button id="toolPointBtn" data-mode="point" class="seg-btn flex-1 px-2 py-1 text-xs font-medium bg-white border border-gray-300 rounded-l-md hover:bg-gray-100">Point</button>
+                  <button id="toolLineBtn" data-mode="line" class="seg-btn flex-1 px-2 py-1 text-xs font-medium bg-white border-t border-b border-gray-300 hover:bg-gray-100">Line</button>
+                  <button id="toolPolyBtn" data-mode="poly" class="seg-btn flex-1 px-2 py-1 text-xs font-medium bg-white border-t border-b border-gray-300 hover:bg-gray-100">Object</button>
+                  <button id="toolEditBtn" data-mode="edit" class="seg-btn flex-1 px-2 py-1 text-xs font-medium bg-white border border-gray-300 rounded-r-md hover:bg-gray-100" title="Edit geometry (drag points/edges; Ctrl/⌘+Click deletes vertex)">Edit</button>
+                </div>
               </div>
-              <div class="flex gap-2 items-center">
-                <span class="text-sm font-medium text-gray-700 w-14 text-right pr-2">Actions:</span>
-                <input id="importCsvInput" type="file" accept=".csv,text/csv" class="hidden" />
-                <button id="importCsvBtn" title="Load Annotations (.csv)" class="flex-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100">Load</button>
-                <button id="exportCsv" title="Save Annotations (.csv)" class="flex-1 px-3 py-1.5 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50" disabled>Export</button>
+              <div id="annotationActions" class="flex gap-2 items-center flex-wrap">
+                <input id="importCsvInput" type="file" accept=".csv,text/csv,.geojson,application/geo+json,application/json" class="hidden" />
+                <button id="importCsvBtn" title="Load Annotations" class="flex-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100">Load</button>
+                <button id="exportCsv" title="Export Annotations" class="flex-1 px-3 py-1.5 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50" disabled>Export</button>
                 <button id="researchClear" title="Clear All Annotations" class="flex-1 px-3 py-1.5 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700">Clear All</button>
               </div>
             </div>
@@ -272,15 +287,15 @@
               </div>
             </div>
             <div class="flex gap-2">
-              <button id="captureSceneBtn" class="flex-1 px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 font-semibold">Capture Scene</button>
+              <button id="captureSceneBtn" class="flex-1 px-4 py-2 text-white bg-indigo-600 rounded-md hover:bg-indigo-700 font-semibold">Capture Scene</button>
               <button id="cancelEditBtn" class="hidden px-4 py-2 text-white bg-red-600 rounded-md hover:bg-red-700 font-semibold">Cancel</button>
             </div>
           </div>
-          <div class="flex flex-wrap gap-2 justify-center p-2 rounded-lg">
+          <div id="storyActions" class="flex flex-wrap gap-2 justify-center p-2 rounded-lg">
             <input id="loadStoryInput" type="file" accept=".json,application/json" class="hidden" />
             <button id="loadStoryBtn" class="px-3 py-1.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100">Load</button>
             <button id="downloadStoryBtn" class="px-3 py-1.5 text-sm font-semibold text-white bg-green-600 rounded-md hover:bg-green-700 disabled:opacity-50" disabled>Export</button>
-            <button id="presentStoryBtn" class="px-3 py-1.5 text-sm font-semibold text-white bg-purple-600 rounded-md hover:bg-purple-700 disabled:opacity-50" disabled>Present</button>
+            <button id="presentStoryBtn" class="px-3 py-1.5 text-sm font-semibold text-white bg-indigo-600 rounded-md hover:bg-indigo-700 disabled:opacity-50" disabled>Present</button>
           </div>
            <div class="h-60 overflow-auto custom-scrollbar border border-gray-200 rounded-lg">
             <ul id="story-list" class="divide-y divide-gray-200">
@@ -289,25 +304,36 @@
           </div>
         </div>
 
-        <div id="panelInfo" class="tab-panel hidden p-4 space-y-6">
-          <div class="flex flex-wrap gap-3 justify-center">
-             <a class="px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-full hover:bg-gray-100" href="https://www.canva.com/design/DAGsdCxbAho/UqzPt9W5ceAJH7sPdhvYOg/view?utm_content=DAGsdCxbAho&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h9602289aa0" target="_blank" rel="noreferrer">About Us</a>
-            <a class="px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-full hover:bg-gray-100" href="https://forms.gle/xJexnw5sDWxSETNt5" target="_blank" rel="noreferrer">Feedback</a>
-            <a class="px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-full hover:bg-gray-100" href="mailto:vietnam.ma.project@gmail.com" target="_blank" rel="noreferrer">Email Us</a>
+        <div id="panelInfo" class="tab-panel hidden p-4 space-y-4">
+          <div class="grid grid-cols-1 gap-4">
+            <div class="space-y-3 p-4 bg-white border border-gray-200 rounded-lg">
+              <h3 class="text-sm font-semibold text-gray-800">Quick Start</h3>
+              <button id="startTourBtn" class="w-full px-3 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-md hover:bg-indigo-700">Take a Tour</button>
+            </div>
+            <div class="space-y-3 p-4 bg-white border border-gray-200 rounded-lg">
+              <h3 class="text-sm font-semibold text-gray-800">Links</h3>
+              <div class="flex flex-wrap gap-2">
+                <a class="px-3 py-1.5 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100" href="https://www.canva.com/design/DAGsdCxbAho/UqzPt9W5ceAJH7sPdhvYOg/view?utm_content=DAGsdCxbAho&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h9602289aa0" target="_blank" rel="noreferrer">About Us</a>
+                <a class="px-3 py-1.5 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100" href="https://forms.gle/xJexnw5sDWxSETNt5" target="_blank" rel="noreferrer">Feedback</a>
+                <a class="px-3 py-1.5 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100" href="mailto:vietnam.ma.project@gmail.com" target="_blank" rel="noreferrer">Email Us</a>
+              </div>
+            </div>
           </div>
-          <div class="space-y-2 text-sm text-gray-700">
-            <h3 class="font-bold text-base">Tips & Shortcuts</h3>
-            <ul class="list-disc list-inside space-y-2 text-gray-600">
-              <li><b>Navigation:</b> Pan by dragging and zoom with the scroll wheel. Hold <b>Ctrl/⌘</b> and drag to rotate the map. Click the compass icon to reset to North-up.</li>
-              <li><b>Sidebar:</b> Click the arrow button on the edge of the sidebar to collapse or expand it for more map space.</li>
-              <li><b>View Modes:</b> Switch between <b>Overlay</b>, <b>Side-by-Side</b>, and <b>Spyglass</b> views. In the latter two modes, drag the small handles on the map to adjust the view.</li>
-              <li><b>Annotations:</b> Use the tools to draw points, lines, or objects. Click a feature on the map to see its details, or use the table to <b>Edit</b>, <b>Hide</b>, or <b>Delete</b> it. Press <b>Enter</b> to finish drawing a line/object, or <b>Esc</b> to cancel.</li>
-              <li><b>Stories:</b> Create a narrative by capturing scenes. Each scene saves the map view, overlay, and visible annotations. You can then <b>Present</b> your story as a slideshow, or <b>Save</b> it to a file to share.</li>
-              <li><b>Data Persistence:</b> Your annotations and story scenes are saved automatically in your browser. Use the <b>Save/Load</b> buttons in the Annotation and Story panels to export your work to a file or import from one.</li>
-              <li><b>Coordinates:</b> Right-click anywhere on the map to see the coordinates for that location. Click the value to copy it to your clipboard.</li>
-             </ul>
+          <div class="p-4 bg-white border border-gray-200 rounded-lg">
+            <details>
+              <summary class="cursor-pointer text-sm font-semibold text-gray-800 select-none">Tips & Shortcuts</summary>
+              <ul class="mt-2 list-disc list-inside space-y-1 text-xs text-gray-600">
+                <li><b>Navigation:</b> Drag to pan, scroll to zoom, Ctrl/⌘+drag to rotate.</li>
+                <li><b>Sidebar:</b> Use the arrow to collapse/expand for more map space.</li>
+                <li><b>View Modes:</b> Side‑X/Side‑Y/Spyglass; drag handles to adjust.</li>
+                <li><b>Annotations:</b> Draw Point/Line/Object; press Enter to finish, Esc to cancel.</li>
+                <li><b>Stories:</b> Capture scenes, reorder, present or export.</li>
+                <li><b>Data:</b> Load CSV/GeoJSON; Export GeoJSON (annotations); Story as JSON.</li>
+                <li><b>Coordinates:</b> Right‑click the map; click value to copy.</li>
+              </ul>
+            </details>
           </div>
-           <div class="text-center text-xs text-gray-400 pt-4 border-t">Built with OpenLayers, Allmaps & OSM</div>
+          <div class="text-center text-xs text-gray-400">Built with OpenLayers, Allmaps & OSM</div>
         </div>
       </div>
     </aside>
@@ -326,24 +352,7 @@
     </main>
   </div>
 
-  <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around shadow-lg-top">
-      <button data-tab="Map" class="tab-btn-mobile active flex-1 flex flex-col items-center p-2 text-gray-500">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13v-6m0-6V4m6 16l-5.447-2.724A1 1 0 019 16.382V5.618a1 1 0 011.447-.894L15 7m0 13v-6m0-6V4"></path></svg>
-        <span class="text-xs">Map</span>
-      </button>
-      <button data-tab="Annotations" class="tab-btn-mobile flex-1 flex flex-col items-center p-2 text-gray-500">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-        <span class="text-xs">Annotations</span>
-      </button>
-      <button data-tab="Story" class="tab-btn-mobile flex-1 flex flex-col items-center p-2 text-gray-500">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-        <span class="text-xs">Story</span>
-      </button>
-      <button data-tab="Info" class="tab-btn-mobile flex-1 flex flex-col items-center p-2 text-gray-500">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-        <span class="text-xs">Info</span>
-      </button>
-  </nav>
+  
 
   <div id="coordMenu" class="hidden absolute z-50 min-w-[220px] bg-white border border-gray-300 rounded-lg shadow-xl p-3" role="dialog" aria-label="Coordinates">
     <div class="font-semibold text-sm text-gray-800 mb-2">Coordinates</div>
@@ -375,6 +384,22 @@
       <div id="presentation-content" class="w-full bg-gray-900/80 backdrop-blur-sm border border-white/10 rounded-lg p-5 pointer-events-auto">
           <h2 id="presentation-title" class="text-xl font-bold mb-2"></h2>
           <p id="presentation-details" class="text-sm max-h-24 overflow-y-auto"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Guided Tour Overlay Elements -->
+  <div id="tour-backdrop" class="tour-backdrop"></div>
+  <div id="tour-highlight" class="tour-highlight"></div>
+  <div id="tour-popover" class="tour-popover">
+    <div class="tour-header" id="tour-title">Welcome</div>
+    <div class="tour-body" id="tour-text">Let’s take a quick tour.</div>
+    <div class="tour-footer">
+      <span class="counter" id="tour-counter"></span>
+      <div class="flex gap-2">
+        <button id="tour-skip" class="btn btn-ghost">Skip</button>
+        <button id="tour-prev" class="btn btn-ghost">Back</button>
+        <button id="tour-next" class="btn btn-primary">Next</button>
       </div>
     </div>
   </div>
@@ -445,6 +470,7 @@
         loadedOverlayId: null,
         loadingMapController: null,
         rotationLocked: false,
+        overlayCache: {},
         view: {
           mode: 'overlay',
           sideRatio: 0.5,
@@ -480,7 +506,7 @@
     const esriImageryLayer = new ol.layer.Tile({
       source: new ol.source.XYZ({
         url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        attributions: 'Tiles © <a href="https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer">Esri</a>',
+        attributions: 'VMA Project | Tiles © <a href="https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer">Esri</a>',
         crossOrigin: 'anonymous'
       }),
       visible: true,
@@ -493,7 +519,7 @@
           'https://mt0.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
           'https://mt2.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', 'https://mt3.google.com/vt/lyrs=m&x={x}&y={y}&z={z}'
         ],
-        maxZoom: 22, crossOrigin: 'anonymous', attributions: 'Tiles © Google'
+        maxZoom: 22, crossOrigin: 'anonymous', attributions: 'VMA Project | Tiles © Google'
       }),
       visible: false, properties: { 'name': 'g-streets', 'base': true }, zIndex: 0
     });
@@ -503,7 +529,7 @@
           'https://mt0.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
           'https://mt2.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', 'https://mt3.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'
         ],
-        maxZoom: 22, crossOrigin: 'anonymous', attributions: 'Tiles © Google'
+        maxZoom: 22, crossOrigin: 'anonymous', attributions: 'VMA Project | Tiles © Google'
       }),
       visible: false, properties: { 'name': 'g-satellite', 'base': true }, zIndex: 0
     });
@@ -596,9 +622,13 @@
     const statusEl = document.getElementById('status');
     const metaBtn = document.getElementById('metaBtn');
     // Research Panel
-    const btnPoint = document.getElementById('btnPoint');
-    const btnLine = document.getElementById('btnLine');
-    const btnPoly = document.getElementById('btnPoly');
+    // Segmented tool buttons
+    const toolModeGroup = document.getElementById('toolModeGroup');
+    const toolPointBtn = document.getElementById('toolPointBtn');
+    const toolLineBtn = document.getElementById('toolLineBtn');
+    const toolPolyBtn = document.getElementById('toolPolyBtn');
+    const toolEditBtn = document.getElementById('toolEditBtn');
+    // No default selection; start with no active tool
     const researchClear = document.getElementById('researchClear');
     const annoTbody = document.getElementById('annoTbody');
     const exportCsvBtn = document.getElementById('exportCsv');
@@ -675,8 +705,8 @@
         if (isCollapsed) {
             currentWidth = 64; // collapsed width is fixed at 64px
         } else {
-            // expanded width depends on screen size due to `w-full md:w-96`
-            currentWidth = window.innerWidth >= 768 ? 384 : window.innerWidth;
+            // expanded width fixed for desktop
+            currentWidth = 384;
         }
         sidebarToggle.style.left = `${currentWidth - 2}px`;
     }
@@ -697,8 +727,8 @@
     function showTab(tabName) {
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
       document.getElementById(`panel${tabName}`).classList.remove('hidden');
-      document.querySelectorAll('.tab-btn-desktop, .tab-btn-mobile').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll(`.tab-btn-desktop[data-tab="${tabName}"], .tab-btn-mobile[data-tab="${tabName}"]`).forEach(t => t.classList.add('active'));
+    document.querySelectorAll('.tab-btn-desktop').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll(`.tab-btn-desktop[data-tab=\"${tabName}\"]`).forEach(t => t.classList.add('active'));
       if (sidebar.classList.contains('collapsed')) {
         updateSidebar(false);
       }
@@ -707,7 +737,7 @@
         populateSceneAnnotationList(scene ? scene.visibleFeatures : null);
       }
     }
-    document.querySelectorAll('.tab-btn-desktop, .tab-btn-mobile').forEach(button => {
+    document.querySelectorAll('.tab-btn-desktop').forEach(button => {
       button.addEventListener('click', () => showTab(button.dataset.tab));
     });
     sidebarToggle.addEventListener('click', toggleSidebar);
@@ -762,9 +792,20 @@
       appState.map.loadingMapController = new AbortController();
       const { signal } = appState.map.loadingMapController;
 
-      appState.map.currentMapId = null;
-      appState.map.loadedOverlayId = null;
-      warpedMapLayer.clear();
+      const cache = appState.map.overlayCache;
+
+      // If already active, just ensure opacity and bail
+      if (id === appState.map.loadedOverlayId && appState.map.currentMapId) {
+        const v = parseFloat(opacityRange.value);
+        try { warpedMapLayer.setMapOpacity(appState.map.currentMapId, v); } catch(_) {}
+        return;
+      }
+
+      // Hide current map but keep cached
+      if (appState.map.currentMapId) {
+        try { warpedMapLayer.setMapOpacity(appState.map.currentMapId, 0); } catch(_) {}
+      }
+
       loader.classList.remove('hidden');
       statusEl.textContent = 'Loading map...';
       statusEl.classList.remove('text-red-600');
@@ -775,25 +816,34 @@
       metaLinkWrap.innerHTML = `<a class="text-indigo-600 hover:underline" href="${annotationUrl}" target="_blank" rel="noreferrer">${annotationUrl}</a>`;
 
       try {
-        const response = await fetch(annotationUrl, { signal });
-        if (!response.ok) throw new Error(`Annotation not found (HTTP ${response.status})`);
-        const annotation = await response.json();
-        if (signal.aborted) return;
-        const mapIds = await warpedMapLayer.addGeoreferenceAnnotation(annotation);
-        if (signal.aborted) return;
-        if (!mapIds || mapIds.length === 0 || mapIds[0] instanceof Error) throw mapIds[0] || new Error('Failed to add map to layer.');
-        
-        appState.map.currentMapId = mapIds[0];
+        let mapId;
+        let annotation;
+
+        if (cache[id]?.mapId) {
+          ({ mapId, annotation } = cache[id]);
+        } else {
+          const response = await fetch(annotationUrl, { signal });
+          if (!response.ok) throw new Error(`Annotation not found (HTTP ${response.status})`);
+          annotation = await response.json();
+          if (signal.aborted) return;
+          const mapIds = await warpedMapLayer.addGeoreferenceAnnotation(annotation);
+          if (signal.aborted) return;
+          if (!mapIds || mapIds.length === 0 || mapIds[0] instanceof Error) throw mapIds[0] || new Error('Failed to add map to layer.');
+          mapId = mapIds[0];
+          cache[id] = { mapId, annotation };
+        }
+
+        appState.map.currentMapId = mapId;
         appState.map.loadedOverlayId = id;
-        
-        renderMetadataSummary(annotation, null, warpedMapLayer.getExtent());
+
+        try { renderMetadataSummary(annotation, null, warpedMapLayer.getExtent()); } catch(_) {}
         metaBtn.disabled = false;
-        zoomToMapBtn.disabled = false; // Enable the button for manual use
-        statusEl.textContent = 'Map data received. Please wait for tiles to load.';
-        
+        zoomToMapBtn.disabled = false;
+        statusEl.textContent = cache[id]?.annotation ? 'Map data received. Please wait for tiles to load.' : 'Map data received. Please wait for tiles to load.';
+
         const opacity = parseFloat(opacityRange.value);
-        warpedMapLayer.setMapOpacity(appState.map.currentMapId, opacity); // Keep opacity setting
-        queueSaveState(); 
+        warpedMapLayer.setMapOpacity(mapId, opacity);
+        queueSaveState();
 
       } catch (err) {
         if (err.name === 'AbortError') return;
@@ -822,6 +872,172 @@
     };
     loadCustomBtn.addEventListener('click', loadFromInput);
     customMapIdInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') loadFromInput(); });
+
+    // --- Guided Tour ---
+    (function(){
+      const backdrop = document.getElementById('tour-backdrop');
+      const highlight = document.getElementById('tour-highlight');
+      const popover = document.getElementById('tour-popover');
+      const titleEl = document.getElementById('tour-title');
+      const textEl = document.getElementById('tour-text');
+      const counterEl = document.getElementById('tour-counter');
+      const btnNext = document.getElementById('tour-next');
+      const btnPrev = document.getElementById('tour-prev');
+      const btnSkip = document.getElementById('tour-skip');
+      const btnStart = document.getElementById('startTourBtn');
+
+      const steps = [
+        { title: 'Welcome', text: 'This quick tour shows how to choose a map, add an annotation, and create a story.', selector: null, placement: 'center', ensure: () => showTab('Map') },
+        { title: 'Choose a Map', text: 'Use this module to filter by map type, then pick a map from our collection. You can also add custom map from Allmaps ID.', selector: '#historicalMapModule', placement: 'right', ensure: () => showTab('Map') },
+        { title: 'View & Opacity', text: 'Switch between Overlay, Side-by-Side, or Spyglass, and adjust the overlay opacity.', selector: '#viewControls', placement: 'right', ensure: () => showTab('Map') },
+        { title: 'Draw Tools', text: 'You can annotate with points, lines, or polygons. Click on the map to start drawing. Press Enter to finish, Esc to cancel.', selector: '#drawTools', placement: 'right', ensure: () => showTab('Annotations') },
+        { title: 'Search & Add', text: 'Or add annotation directly from a search. Search is powered by Notimatim and OpenStreetMap.', selector: '#searchModule', placement: 'right', ensure: () => showTab('Annotations') },
+        { title: 'Manage Annotations', text: 'Click on the label once to zoom to the annotation, twice to edit labels. Click Edit to add details, color, and up to two images.', selector: '#annoTable', placement: 'left', ensure: () => showTab('Annotations') },
+        { title: 'Capture Scene', text: 'Capture a scene to add it to your story. Each scene saves the view, overlay, and visible annotations.', selector: '#captureSceneBtn', placement: 'left', ensure: () => showTab('Story') },
+        { title: 'Edit & Reorder', text: 'Use the Edit button to update a scene. To edit view and overlay, switch to Maps panel. Drag scenes to reorder them.', selector: '#story-list', placement: 'left', ensure: () => showTab('Story') },
+        { title: 'Story Actions', text: 'Load an existing story, export your story to a file, or present it as an interactive.', selector: '#storyActions', placement: 'left', ensure: () => showTab('Story') }
+      ];
+
+      let index = -1;
+
+      function show() {
+        backdrop.style.display = 'block';
+        popover.style.display = 'block';
+        document.addEventListener('keydown', onKey);
+        document.addEventListener('scroll', position, true);
+        window.addEventListener('resize', position);
+      }
+      function hide() {
+        backdrop.style.display = 'none';
+        popover.style.display = 'none';
+        highlight.style.display = 'none';
+        document.removeEventListener('keydown', onKey);
+        document.removeEventListener('scroll', position, true);
+        window.removeEventListener('resize', position);
+      }
+      function targetEl(step) {
+        if (!step.selector) return null;
+        return document.querySelector(step.selector);
+      }
+      function position() {
+        const step = steps[index];
+        const el = targetEl(step);
+        const padding = 8;
+        const gap = 12;
+        const vw = window.innerWidth, vh = window.innerHeight;
+        const pw = Math.min(340, vw - 20);
+        popover.style.width = pw + 'px';
+
+        if (!el || el.offsetParent === null) {
+          highlight.style.display = 'none';
+          // center popover on screen if no target
+          const ph = popover.offsetHeight;
+          popover.style.left = (vw/2 - pw/2) + 'px';
+          popover.style.top = (vh/2 - ph/2) + 'px';
+          return;
+        }
+
+        const r = el.getBoundingClientRect();
+        // Highlight box
+        highlight.style.display = 'block';
+        highlight.style.left = (Math.max(10, r.left - padding)) + 'px';
+        highlight.style.top = (Math.max(10, r.top - padding)) + 'px';
+        highlight.style.width = (r.width + padding*2) + 'px';
+        highlight.style.height = (r.height + padding*2) + 'px';
+
+        // Popover positioning that avoids covering the highlight
+        const ph = popover.offsetHeight;
+
+        function fits(left, top) {
+          // within viewport margins
+          if (left < 12 || left + pw > vw - 12) return false;
+          if (top < 12 || top + ph > vh - 12) return false;
+          // avoid overlapping the highlight rect (with small gap)
+          const overlap = !(left + pw <= r.left - gap ||
+                            left >= r.right + gap ||
+                            top + ph <= r.top - gap ||
+                            top >= r.bottom + gap);
+          return !overlap;
+        }
+
+        // Preferred order: right, left, bottom, top
+        const candidates = [];
+        // right of target
+        candidates.push({
+          left: r.right + gap,
+          top: Math.min(Math.max(12, r.top), vh - ph - 12)
+        });
+        // left of target
+        candidates.push({
+          left: r.left - pw - gap,
+          top: Math.min(Math.max(12, r.top), vh - ph - 12)
+        });
+        // below target
+        candidates.push({
+          left: Math.min(Math.max(12, r.left), vw - pw - 12),
+          top: r.bottom + gap
+        });
+        // above target
+        candidates.push({
+          left: Math.min(Math.max(12, r.left), vw - pw - 12),
+          top: r.top - ph - gap
+        });
+
+        let placed = false;
+        for (const c of candidates) {
+          if (fits(c.left, c.top)) {
+            popover.style.left = c.left + 'px';
+            popover.style.top = c.top + 'px';
+            placed = true;
+            break;
+          }
+        }
+
+        if (!placed) {
+          // Fallback: clamp to screen near the target without strict overlap rules
+          let left = Math.min(Math.max(12, r.right + gap), vw - pw - 12);
+          let top = Math.min(Math.max(12, r.top), vh - ph - 12);
+          popover.style.left = left + 'px';
+          popover.style.top = top + 'px';
+        }
+
+        // Ensure in view for scrollable panels
+        try { el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' }); } catch (_) {}
+      }
+      function setStep(i) {
+        if (i < 0 || i >= steps.length) { end(); return; }
+        index = i;
+        const step = steps[index];
+        if (typeof step.ensure === 'function') step.ensure();
+        titleEl.textContent = step.title;
+        textEl.textContent = step.text;
+        counterEl.textContent = `Step ${index + 1} of ${steps.length}`;
+        btnPrev.disabled = index === 0;
+        btnNext.textContent = index === steps.length - 1 ? 'Finish' : 'Next';
+        show();
+        // Slight delay to allow panels to render before positioning
+        setTimeout(position, 50);
+      }
+      function next() { setStep(index + 1); }
+      function prev() { setStep(index - 1); }
+      function end() { hide(); index = -1; }
+      function onKey(e){ if (e.key === 'Escape') end(); if (e.key === 'ArrowRight' || e.key === 'Enter') next(); if (e.key === 'ArrowLeft') prev(); }
+
+      if (btnStart) btnStart.addEventListener('click', () => setStep(0));
+      btnNext.addEventListener('click', next);
+      btnPrev.addEventListener('click', prev);
+      btnSkip.addEventListener('click', end);
+
+      // Optionally auto-suggest tour on first visit
+      try {
+        const seen = localStorage.getItem('vmaTourSeen');
+        if (!seen) {
+          // show subtle indicator by pulsing the Tour button
+          btnStart?.classList.add('animate-pulse');
+          btnStart?.addEventListener('click', () => localStorage.setItem('vmaTourSeen', '1'), { once: true });
+        }
+      } catch(_) {}
+    })();
 
     // --- View Mode & Opacity ---
     function setViewOverlaysPointerEvents(value) {
@@ -997,6 +1213,7 @@
                 });
 
                 labelInput.addEventListener('blur', () => {
+                    labelInput.value = (labelInput.value || '').trim();
                     f.set('label', labelInput.value);
                     researchLayer.changed();
                     queueSaveState();
@@ -1013,12 +1230,46 @@
             row.querySelector('.anno-del').addEventListener('click', () => { researchSource.removeFeature(f); });
         });
     }
+    // Modify & Snap interactions
+    appState.research.modifyInteraction = null;
+    appState.research.snapInteraction = null;
+
+    function disableModify(){
+        if (appState.research.modifyInteraction) map.removeInteraction(appState.research.modifyInteraction);
+        if (appState.research.snapInteraction) map.removeInteraction(appState.research.snapInteraction);
+        appState.research.modifyInteraction = null;
+        appState.research.snapInteraction = null;
+        toolEditBtn?.classList.remove('active');
+        setViewOverlaysPointerEvents('auto');
+    }
+
+    function enableModify(){
+        // Turn off drawing if active
+        if (appState.research.drawInteraction) {
+            map.removeInteraction(appState.research.drawInteraction);
+            appState.research.drawInteraction = null;
+        }
+        document.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
+        toolEditBtn?.classList.add('active');
+        // Keep pointer events enabled so features are interactive
+        setViewOverlaysPointerEvents('auto');
+        appState.research.modifyInteraction = new ol.interaction.Modify({
+            source: researchSource,
+            deleteCondition: (e) => ol.events.condition.platformModifierKeyOnly(e) && ol.events.condition.singleClick(e)
+        });
+        appState.research.snapInteraction = new ol.interaction.Snap({ source: researchSource });
+        map.addInteraction(appState.research.modifyInteraction);
+        map.addInteraction(appState.research.snapInteraction);
+        appState.research.modifyInteraction.on('modifyend', () => { researchLayer.changed(); queueSaveState(); });
+    }
+
     function cleanupTool(){
         if (appState.research.drawInteraction) map.removeInteraction(appState.research.drawInteraction);
         appState.research.drawInteraction = null;
         if (appState.research.keyDownFinish) document.removeEventListener('keydown', appState.research.keyDownFinish);
         if (appState.research.keyDownCancel) document.removeEventListener('keydown', appState.research.keyDownCancel);
-        document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+        disableModify();
+        document.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
     }
     function setActiveTool(mode){
         cleanupTool();
@@ -1030,10 +1281,9 @@
         setViewOverlaysPointerEvents('none'); // Disable pointer events to draw "through" them
         const typeMap = { point: 'Point', line: 'LineString', poly: 'Polygon' };
         if (!typeMap[mode]) return;
-        
-        let buttonId = `#btn${mode.charAt(0).toUpperCase() + mode.slice(1)}`;
-        const button = document.querySelector(buttonId);
-        if (button) button.classList.add('active');
+        // mark segmented button active
+        const seg = { point: toolPointBtn, line: toolLineBtn, poly: toolPolyBtn }[mode];
+        if (seg) seg.classList.add('active');
 
         appState.research.drawInteraction = new ol.interaction.Draw({ source: researchSource, type: typeMap[mode] });
         map.addInteraction(appState.research.drawInteraction);
@@ -1051,20 +1301,43 @@
           e.feature.set('img2', '');
           e.feature.set('hidden', false);
           refreshAnnoTable();
-          setActiveTool('none');
+          queueSaveState();
+          cleanupTool();
         });
     }
-    btnPoint.addEventListener('click', () => setActiveTool(btnPoint.classList.contains('active') ? 'none' : 'point'));
-    btnLine.addEventListener('click', () => setActiveTool(btnLine.classList.contains('active') ? 'none' : 'line'));
-    btnPoly.addEventListener('click', () => setActiveTool(btnPoly.classList.contains('active') ? 'none' : 'poly'));
+    function setToolMode(mode){
+        document.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
+        switch(mode){
+          case 'point': setActiveTool('point'); break;
+          case 'line': setActiveTool('line'); break;
+          case 'poly': setActiveTool('poly'); break;
+          case 'edit': enableModify(); break;
+          default: cleanupTool(); break;
+        }
+    }
+    toolModeGroup.addEventListener('click', (e) => {
+        const btn = e.target.closest('.seg-btn');
+        if (!btn) return;
+        const mode = btn.dataset.mode;
+        if (!mode) return;
+        if (btn.classList.contains('active')) {
+            // toggle off if clicking active mode
+            cleanupTool();
+        } else {
+            setToolMode(mode);
+        }
+    });
     researchSource.on(['addfeature', 'removefeature', 'clear'], () => {
         refreshAnnoTable();
+        queueSaveState();
         if (!document.getElementById('panelStory').classList.contains('hidden')) {
             const scene = appState.story.editingSceneIndex !== null ? appState.story.scenes[appState.story.editingSceneIndex] : null;
             populateSceneAnnotationList(scene ? scene.visibleFeatures : null);
         }
     });
     researchClear.addEventListener('click', () => { researchSource.clear(); });
+
+    // (Manage dropdown removed; restored direct action buttons)
     
     // --- Annotation Modal Functions ---
     function openAnnoModal(feature) {
@@ -1103,8 +1376,8 @@
     saveAnnoBtn.addEventListener('click', () => {
       const feature = researchSource.getFeatureById(appState.ui.selectedFeatureId);
       if (!feature) return;
-      feature.set('label', annoLabelInput.value);
-      feature.set('details', annoDetailsInput.value);
+      feature.set('label', (annoLabelInput.value || '').trim());
+      feature.set('details', (annoDetailsInput.value || '').trim());
       feature.set('color', annoColorInput.value);
       feature.set('img1', annoImg1Input.value.trim());
       feature.set('img2', annoImg2Input.value.trim());
@@ -1124,8 +1397,8 @@
       if (appState.research.drawInteraction) return;
       const feature = map.forEachFeatureAtPixel(evt.pixel, (f, layer) => layer === researchLayer ? f : undefined);
       if (feature && !feature.get('hidden')) {
-        const label = feature.get('label') || 'No Name';
-        const details = feature.get('details') || 'No details provided.';
+        const label = feature.get('label');
+        const details = feature.get('details');
         const img1 = feature.get('img1');
         const img2 = feature.get('img2');
 
@@ -1192,7 +1465,8 @@
         if (scene.overlayId && scene.overlayId !== appState.map.loadedOverlayId) {
             await loadAllmaps(scene.overlayId);
         } else if (!scene.overlayId && appState.map.currentMapId) {
-            warpedMapLayer.clear();
+            // Hide current overlay but keep it cached to avoid reloads later
+            try { warpedMapLayer.setMapOpacity(appState.map.currentMapId, 0); } catch(_) {}
             appState.map.currentMapId = null;
             appState.map.loadedOverlayId = null;
             metaBtn.disabled = true;
@@ -1338,7 +1612,7 @@
         sceneDetailsInput.value = '';
         sceneDelayInput.value = '5';
         captureSceneBtn.textContent = 'Capture Scene';
-        captureSceneBtn.classList.replace('bg-green-600', 'bg-blue-600');
+        captureSceneBtn.classList.replace('bg-indigo-600', 'bg-indigo-600');
         cancelEditBtn.classList.add('hidden');
         populateSceneAnnotationList();
     }
@@ -1594,13 +1868,18 @@
         const geojson = JSON.stringify(geoJsonFormat.writeGeometryObject(f.getGeometry(), { featureProjection: 'EPSG:3857' }));
         return [f.getId() || '', f.getGeometry().getType(), f.get('label') || '', f.get('details') || '', f.get('color') || '#2563eb', f.get('img1') || '', f.get('img2') || '', geojson].map(csvEscape).join(',');
     }
-    function downloadCsv() {
-        const header = 'id,type,label,details,color,img1,img2,geojson';
-        const csv = [header].concat(researchSource.getFeatures().map(featureToCsvRow)).join('\r\n');
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    function downloadGeoJSON() {
+        const format = new ol.format.GeoJSON();
+        // Write as true GeoJSON in EPSG:4326 for GIS compatibility
+        const featureCollection = format.writeFeaturesObject(
+            researchSource.getFeatures(),
+            { featureProjection: 'EPSG:3857', dataProjection: 'EPSG:4326' }
+        );
+        const blob = new Blob([JSON.stringify(featureCollection, null, 2)], { type: 'application/geo+json;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url; a.download = `annotations-${new Date().toISOString().replace(/[:.]/g, '-')}.csv`;
+        a.href = url;
+        a.download = `annotations-${new Date().toISOString().replace(/[:.]/g, '-')}.geojson`;
         a.click();
         URL.revokeObjectURL(url);
     }
@@ -1613,6 +1892,21 @@
         }
         out.push(cur);
         return out;
+    }
+    function importGeoJSON(text) {
+        let json;
+        try { json = JSON.parse(text); } catch (_) { alert('Invalid GeoJSON file.'); return; }
+        try {
+            const format = new ol.format.GeoJSON();
+            const feats = format.readFeatures(json, { dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857' });
+            feats.forEach(f => { getOrAssignId(f); });
+            researchSource.addFeatures(feats);
+            refreshAnnoTable();
+            queueSaveState();
+        } catch (e) {
+            console.error(e);
+            alert('Failed to import GeoJSON.');
+        }
     }
     function importCsv(text) {
         const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
@@ -1639,13 +1933,22 @@
             } catch (_) {}
         }
     }
-    exportCsvBtn.addEventListener('click', downloadCsv);
+    exportCsvBtn.addEventListener('click', downloadGeoJSON);
     importCsvBtn.addEventListener('click', () => importCsvInput.click());
     importCsvInput.addEventListener('change', (e) => {
         const file = e.target.files && e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = () => { importCsv(String(reader.result || '')); importCsvInput.value = ''; };
+        reader.onload = () => {
+            const text = String(reader.result || '');
+            const name = (file.name || '').toLowerCase();
+            if (name.endsWith('.geojson') || name.endsWith('.json') || /^\s*\{/.test(text)) {
+                importGeoJSON(text);
+            } else {
+                importCsv(text);
+            }
+            importCsvInput.value = '';
+        };
         reader.readAsText(file);
     });
 
@@ -1675,10 +1978,54 @@
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { hideCoordMenu(); closeMetaFn(); closeAnnoModal(); exitPresentation(); } });
     if (clearStateBtn) {
         clearStateBtn.addEventListener('click', () => {
-            if (confirm('Are you sure you want to clear all saved data? This action cannot be undone.')) {
+            if (!confirm('Clear all saved data, maps, and reload? This cannot be undone.')) return;
+            try {
+                // Clear localStorage keys used by the app
                 localStorage.removeItem(APP_STATE_KEY);
-                location.reload();
-            }
+                localStorage.removeItem('vmaTourSeen');
+            } catch(_) {}
+            try { saveStateTimer && clearTimeout(saveStateTimer); } catch(_) {}
+            
+            // Clear annotations and story
+            try { researchSource.clear(); } catch(_) {}
+            try { appState.story.scenes = []; renderStoryPanel(); } catch(_) {}
+
+            // Clear overlays and caches
+            try { warpedMapLayer.clear(); } catch(_) {}
+            try { warpedMapLayerB.clear(); } catch(_) {}
+            try {
+                appState.map.overlayCache = {};
+                appState.map.overlayA = { id: null, mapId: null };
+                appState.map.overlayB = { id: null, mapId: null };
+                appState.map.currentMapId = null;
+                appState.map.loadedOverlayId = null;
+            } catch(_) {}
+
+            // Reset compare and UI selections
+            try {
+                if (compareToggle) { compareToggle.checked = false; appState.map.compare.enabled = false; appState.map.compare.flip = false; }
+                if (mapSelector) mapSelector.value = '';
+                if (mapSelectorB) mapSelectorB.value = '';
+                if (customMapIdInput) customMapIdInput.value = '';
+                updateOverlayOrder?.();
+                updateBasemapVisibility?.();
+                updateClipPath?.();
+                updateSwapButtonState?.();
+                updateOpacityTargetNote?.();
+            } catch(_) {}
+
+            // Attempt to clear IndexedDB databases for this origin (best-effort)
+            try {
+                if (indexedDB && indexedDB.databases) {
+                    indexedDB.databases().then(dbs => {
+                        try { dbs.forEach(db => db && db.name && indexedDB.deleteDatabase(db.name)); } catch(_) {}
+                    }).finally(() => setTimeout(() => location.reload(), 50));
+                    return; // reload scheduled above
+                }
+            } catch(_) {}
+
+            // Fallback reload
+            setTimeout(() => location.reload(), 50);
         });
     }
 
@@ -1725,6 +2072,10 @@
         if (saveStateTimer) clearTimeout(saveStateTimer);
         saveStateTimer = setTimeout(saveAppState, 1000);
     }
+    // Ensure state is flushed on page unload
+    window.addEventListener('beforeunload', () => {
+        try { if (saveStateTimer) { clearTimeout(saveStateTimer); saveAppState(); } } catch(_) {}
+    });
     async function loadAppState() {
         const savedStateJSON = localStorage.getItem(APP_STATE_KEY);
         if (!savedStateJSON) return;
@@ -1837,8 +2188,7 @@
     }
 
     // --- Initial Run ---
-    const isInitiallyMobile = window.innerWidth < 768;
-    updateSidebar(isInitiallyMobile);
+    updateSidebar(false);
     showTab('Map');
     loadAndParseMapDataset().then(() => loadAppState()).then(() => loadFromUrlOrDefault()).then(() => {
         refreshAnnoTable(); renderStoryPanel();
