@@ -560,9 +560,8 @@
     });
     const hcmcPlanningLayer = new ol.layer.Tile({
       source: new ol.source.XYZ({
-        url: 'https://cors-anywhere.herokuapp.com/https://sqhkt-qlqh.tphcm.gov.vn/api/tiles/bandoso/{z}/{x}/{y}',
-        attributions: 'HCMC Department of Planning and Architecture',
-        crossOrigin: 'anonymous'
+        url: 'https://sqhkt-qlqh.tphcm.gov.vn/api/tiles/bandoso/{z}/{x}/{y}',
+        attributions: 'HCMC Department of Planning and Architecture'
       }),
       visible: false,
       properties: { 'name': 'hcmc-planning', 'base': true },
