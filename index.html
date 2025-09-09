@@ -159,6 +159,7 @@
               <option value="esri-imagery" selected>Esri World Imagery</option>
               <option value="g-streets">Google Streets</option>
               <option value="g-satellite">Google Satellite</option>
+              <option value="hcmc-planning">HCMC Urban Planning</option>
             </select>
           </div>
           <div id="historicalMapModule" class="space-y-4 p-4 bg-gray-100 rounded-lg border border-gray-200">
@@ -327,6 +328,11 @@
                 <a class="px-3 py-1.5 text-xs font-semibold text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100" href="mailto:vietnam.ma.project@gmail.com" target="_blank" rel="noreferrer">Email Us</a>
               </div>
             </div>
+            <div class="space-y-3 p-4 bg-white border border-gray-200 rounded-lg">
+              <h3 class="text-sm font-semibold text-gray-800">Support Us</h3>
+              <p class="text-xs text-gray-600">If you find this project useful, please consider supporting its development.</p>
+              <button id="donateBtn" class="w-full px-3 py-2 text-sm font-semibold text-white bg-green-600 rounded-md hover:bg-green-700">Donate</button>
+            </div>
           </div>
           <div class="p-4 bg-white border border-gray-200 rounded-lg">
             <details>
@@ -424,6 +430,16 @@
           </div>
       </div>
       <div class="p-4 border-t text-xs text-gray-600">Footprint source: <span id="metaLinkWrap" class="text-gray-400">–</span></div>
+    </div>
+  </div>
+
+  <div id="donateModal" class="hidden fixed inset-0 bg-gray-900/60 z-[1050] flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="donateTitle">
+    <div class="bg-white rounded-lg shadow-xl max-w-xs w-[90vw] flex flex-col">
+      <div class="flex items-center justify-between p-4 border-b">
+        <h3 id="donateTitle" class="text-lg font-bold text-gray-800">Support the Project</h3>
+        <button id="closeDonate" class="text-2xl text-gray-500 hover:text-gray-800" aria-label="Close">×</button>
+      </div>
+      <img src="https://raw.githubusercontent.com/lqtue/phuongnao/main/qr-code.jpg" alt="Donation QR Code" class="p-4">
     </div>
   </div>
 
@@ -542,6 +558,16 @@
       }),
       visible: false, properties: { 'name': 'g-satellite', 'base': true }, zIndex: 0
     });
+    const hcmcPlanningLayer = new ol.layer.Tile({
+      source: new ol.source.XYZ({
+        url: 'https://sqhkt-qlqh.tphcm.gov.vn/api/tiles/bandoso/{z}/{x}/{y}',
+        attributions: 'HCMC Department of Planning and Architecture',
+        crossOrigin: 'anonymous'
+      }),
+      visible: false,
+      properties: { 'name': 'hcmc-planning', 'base': true },
+      zIndex: 0
+    });
 
     // --- Overlay & Feature Layers ---
     const warpedMapLayer = new Allmaps.WarpedMapLayer({ zIndex: 10, properties: { 'name': 'allmaps-overlay' } });
@@ -592,7 +618,7 @@
     // --- Map Initialization ---
     const map = new ol.Map({
       target: 'map',
-      layers: [esriImageryLayer, googleStreets, googleSatellite, warpedMapLayer, researchLayer, searchLayer],
+      layers: [esriImageryLayer, googleStreets, googleSatellite, hcmcPlanningLayer, warpedMapLayer, researchLayer, searchLayer],
       view: new ol.View({
         center: ol.proj.fromLonLat([106.70098, 10.77653]),
         zoom: 14,
@@ -671,6 +697,12 @@
     const metaLinkWrap = document.getElementById('metaLinkWrap');
     const metaSummary = document.getElementById('metaSummary');
     const closeMeta = document.getElementById('closeMeta');
+    // Annotation Modal
+    const donateModal = document.getElementById('donateModal');
+    const donateBtn = document.getElementById('donateBtn');
+    const closeDonateBtn = document.getElementById('closeDonate');
+
+
     // Annotation Modal
     const annoModal = document.getElementById('annoModal');
     const closeAnnoModalBtn = document.getElementById('closeAnnoModal');
@@ -769,7 +801,7 @@
         }
     }
     function setBasemap(name) {
-      [esriImageryLayer, googleStreets, googleSatellite].forEach(l => l.setVisible(l.getProperties().name === name));
+      [esriImageryLayer, googleStreets, googleSatellite, hcmcPlanningLayer].forEach(l => l.setVisible(l.getProperties().name === name));
     }
     basemapSel.addEventListener('change', () => { setBasemap(basemapSel.value); queueSaveState(); });
     zoomToMapBtn.addEventListener('click', zoomToMapExtent);
@@ -1443,6 +1475,13 @@
     metaBtn.addEventListener('click', openMeta);
     closeMeta.addEventListener('click', closeMetaFn);
     metaModal.addEventListener('click', (e) => { if (e.target === metaModal) closeMetaFn(); });
+
+    // --- Donate Modal ---
+    function openDonate() { donateModal.classList.remove('hidden'); }
+    function closeDonate() { donateModal.classList.add('hidden'); }
+    donateBtn.addEventListener('click', openDonate);
+    closeDonateBtn.addEventListener('click', closeDonate);
+    donateModal.addEventListener('click', (e) => { if (e.target === donateModal) closeDonate(); });
 
     // --- Story Mode & Presentation ---
     function populateSceneAnnotationList(visibleIds = null) {
