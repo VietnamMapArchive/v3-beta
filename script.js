@@ -1999,7 +1999,7 @@
  * Loads and parses the map dataset.
  */
     async function loadAndParseMapDataset() {
-      const googleSheetUrl = 'https://api.allorigins.win/raw?url=https://docs.google.com/spreadsheets/d/e/2PACX-1vQivs6N80xA_Pgs0J8MMMTGcH4YLzjhhyxPUoMcoQTxHjUyRXo5FMOICXDSxayDcLYisABkoqvXiIiA/pub?gid=0&single=true&output=csv%27;';
+      const googleSheetUrl = 'https://raw.githubusercontent.com/VietnamMapArchive/v3-beta/refs/heads/main/Map%20List%20v2%20-%20Display.csv';
       try {
         const response = await fetch(googleSheetUrl);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
