@@ -1999,8 +1999,8 @@
  * Loads and parses the map dataset.
  */
     async function loadAndParseMapDataset() {
-      const googleSheetUrl = 'https://raw.githubusercontent.com/VietnamMapArchive/v3-beta/refs/heads/main/Map%20List%20v2%20-%20Display.csv';
-      try {
+        const googleSheetUrl = 'https://raw.githubusercontent.com/VietnamMapArchive/v3-beta/main/Map%20List%20v2%20-%20Display.csv';
+        try {
         const response = await fetch(googleSheetUrl);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const csvText = await response.text();
