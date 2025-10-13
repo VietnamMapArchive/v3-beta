@@ -1999,7 +1999,7 @@
  * Loads and parses the map dataset.
  */
     async function loadAndParseMapDataset() {
-      const googleSheetUrl = 'https://cors-anywhere.herokuapp.com/https://docs.google.com/spreadsheets/d/e/2PACX-1vQivs6N80xA_Pgs0J8MMMTGcH4YLzjhhyxPUoMcoQTxHjUyRXo5FMOICXDSxayDcLYisABkoqvXiIiA/pub?gid=0&single=true&output=csv';
+      const googleSheetUrl = 'https://api.allorigins.win/raw?url=https://docs.google.com/spreadsheets/d/e/2PACX-1vQivs6N80xA_Pgs0J8MMMTGcH4YLzjhhyxPUoMcoQTxHjUyRXo5FMOICXDSxayDcLYisABkoqvXiIiA/pub?gid=0&single=true&output=csv%27;';
       try {
         const response = await fetch(googleSheetUrl);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
