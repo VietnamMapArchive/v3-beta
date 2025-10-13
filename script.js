@@ -272,7 +272,11 @@
  */
     function updateSidebar(isCollapsed) {
         sidebar.classList.toggle('collapsed', isCollapsed);
-        sidebarToggle.classList.toggle('hidden', isCollapsed);
+        if (window.innerWidth < 768) {
+            sidebarToggle.classList.toggle('hidden', !isCollapsed);
+        } else {
+            sidebarToggle.classList.toggle('hidden', isCollapsed);
+        }
         if (!isCollapsed) {
             const iconPath = "M11 19l-7-7 7-7m8 14l-7-7 7-7";
             sidebarToggleIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="${iconPath}"></path>`;
@@ -1995,7 +1999,7 @@
  * Loads and parses the map dataset.
  */
     async function loadAndParseMapDataset() {
-      const googleSheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQivs6N80xA_Pgs0J8MMMTGcH4YLzjhhyxPUoMcoQTxHjUyRXo5FMOICXDSxayDcLYisABkoqvXiIiA/pub?gid=0&single=true&output=csv';
+      const googleSheetUrl = 'https://cors-anywhere.herokuapp.com/https://docs.google.com/spreadsheets/d/e/2PACX-1vQivs6N80xA_Pgs0J8MMMTGcH4YLzjhhyxPUoMcoQTxHjUyRXo5FMOICXDSxayDcLYisABkoqvXiIiA/pub?gid=0&single=true&output=csv';
       try {
         const response = await fetch(googleSheetUrl);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
