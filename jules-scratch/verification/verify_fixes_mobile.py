@@ -15,7 +15,7 @@ def test_app_fixes_mobile(page: Page):
 
     # 3. Assert: Confirm that the map data has loaded (by checking for the presence of the map selector options).
     map_selector = page.locator("#allmapsId")
-    # Wait for the options to be populated, which indicates the CSV has been loaded and parsed.
+    # Wait for the options to be populated, which indicates the JSON has been loaded and parsed.
     expect(map_selector.locator("option")).to_have_count.above(1, timeout=10000)
 
     # 4. Screenshot: Capture the final result for visual verification.

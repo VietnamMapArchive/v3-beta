@@ -272,11 +272,7 @@
  */
     function updateSidebar(isCollapsed) {
         sidebar.classList.toggle('collapsed', isCollapsed);
-        if (window.innerWidth < 768) {
-            sidebarToggle.classList.toggle('hidden', !isCollapsed);
-        } else {
-            sidebarToggle.classList.toggle('hidden', isCollapsed);
-        }
+        sidebarToggle.classList.toggle('hidden', isCollapsed && window.innerWidth >= 768);
         if (!isCollapsed) {
             const iconPath = "M11 19l-7-7 7-7m8 14l-7-7 7-7";
             sidebarToggleIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="${iconPath}"></path>`;
@@ -1999,26 +1995,10 @@
  * Loads and parses the map dataset.
  */
     async function loadAndParseMapDataset() {
-      const googleSheetUrl = 'https://cors-anywhere.herokuapp.com/https://docs.google.com/spreadsheets/d/e/2PACX-1vQivs6N80xA_Pgs0J8MMMTGcH4YLzjhhyxPUoMcoQTxHjUyRXo5FMOICXDSxayDcLYisABkoqvXiIiA/pub?gid=0&single=true&output=csv';
       try {
-        const response = await fetch(googleSheetUrl);
+        const response = await fetch('maps.json');
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const csvText = await response.text();
-        const lines = csvText.trim().split(/\r?\n/);
-        const header = lines.shift().split(',').map(h => h.trim().toLowerCase());
-        const nameIndex = header.indexOf('name');
-        const idIndex = header.indexOf('id');
-        const typeIndex = header.indexOf('type');
-        if (nameIndex === -1 || idIndex === -1) throw new Error("CSV must have 'name' and 'id' columns.");
-
-        allMapsData = lines.map(line => {
-          const values = line.match(/(".*?"|[^",\r\n]+)(?=\s*,|\s*$)/g) || [];
-          const name = (values[nameIndex] || '').replace(/"/g, '').trim();
-          const id = (values[idIndex] || '').replace(/"/g, '').trim();
-          const type = typeIndex > -1 ? (values[typeIndex] || '').replace(/"/g, '').trim() : 'Uncategorized';
-          return (name && id) ? { name, id, type } : null;
-        }).filter(Boolean);
-
+        allMapsData = await response.json();
         populateTypeFilter();
         populateMapSelector('all');
       } catch (error) {
