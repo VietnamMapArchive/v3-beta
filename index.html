@@ -2181,8 +2181,8 @@
         mapTypeFilter.innerHTML = `<option value="all" selected>All Types (${allMapsData.length})</option>`;
         sortedTypes.forEach(type => {
             const option = document.createElement('option');
-            option.value = collection;
-            option.textContent = `${collection} (${typeCounts[collection]})`;
+            option.value = type;
+            option.textContent = `${type} (${typeCounts[type]})`;
             mapTypeFilter.appendChild(option);
         });
     }
